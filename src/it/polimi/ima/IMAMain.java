@@ -40,13 +40,12 @@ public class IMAMain {
 
         try {
             // create enemy tank agent and start it
-            int id=1;
-            System.out.println("Agent: " + id);
-            Object[] args = {map,view};
-            (cc.createNewAgent("agent"+id, "it.polimi.ima.controller.MyAgent", args)).start();
-            id=2;
-            System.out.println("Agent: " + id);
-            (cc.createNewAgent("agent"+id, "it.polimi.ima.controller.MyAgent", args)).start();
+            for(int i=0; i<10; i++) {
+                int id = i+1;
+                System.out.println("Agent: " + id);
+                Object[] args = {map, view};
+                (cc.createNewAgent("agent" + id, "it.polimi.ima.controller.MyAgent", args)).start();
+            }
         } catch (StaleProxyException e) {
             e.printStackTrace();
         }

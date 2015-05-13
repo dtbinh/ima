@@ -99,7 +99,7 @@ public class TileBasedMap {
      * @see TileBasedMap#blocked(int, int)
      */
     public boolean blocked(int x, int y) {
-        return getUnit(x, y) != 0 || terrain[x][y] != Constants.FILLED_CELL;
+        return getUnit(x, y) != 0 || terrain[x][y] == Constants.FILLED_CELL;
     }
 
     /**

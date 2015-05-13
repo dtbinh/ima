@@ -34,9 +34,6 @@ public class MyAgent extends Agent{
     private TileBasedMap map;
     private View view;
 
-    // Id of the agent
-    private int tankID = -1;
-
     // Position of the agent
     private Point position;
 
@@ -44,30 +41,7 @@ public class MyAgent extends Agent{
      * This methods choose randomly a movement, updates the model and trigger the repaint of the view
      */
     public void move() {
-
-        RandomDirection d = RandomDirection.getRandomDirection();
-        Point destination = (Point) position.clone();
-        switch (d) {
-            case UP:
-                destination.y -= 1;
-                break;
-            case DOWN:
-                destination.y += 1;
-                break;
-            case LEFT:
-                destination.x -= 1;
-                break;
-            case RIGHT:
-                destination.x += 1;
-            default:
-                break;
-        }
-
-        if (isOutOfBoundary(destination)) {
-            destination = position;
-            System.out.println("out of boundary!!!!!");
-        }
-
+        Point destination = makeOneStep();
         // Update of the model
         map.setUnit(position.x,position.y,0);
         map.setUnit(destination.x,destination.y, Constants.AGENT);
@@ -75,6 +49,45 @@ public class MyAgent extends Agent{
         // Update of the view
         view.update(map.getDTO());
         position = destination;
+    }
+
+    private Point makeOneStep(){
+        Point destination;
+        do {
+            destination = (Point) position.clone();
+            RandomDirection d = RandomDirection.getRandomDirection();
+            switch (d) {
+                case UP:
+                    destination.y -= 1;
+                    break;
+                case DOWN:
+                    destination.y += 1;
+                    break;
+                case LEFT:
+                    destination.x -= 1;
+                    break;
+                case RIGHT:
+                    destination.x += 1;
+                default:
+                    break;
+            }
+        } while (isOutOfBoundary(destination) || computeDistances(destination)<2);
+        return destination;
+    }
+
+    private int computeDistances(Point reference){
+        int distance = Integer.MAX_VALUE;
+        for(int i=0; i<Constants.HEIGHT; i++){
+            for (int j=0; j<Constants.WIDTH; j++){
+                if(map.getUnit(j,i) != 0 && (reference.x != j || reference.y != i) &&
+                        !(i==position.y && j==position.x)){
+                    if (Math.abs(j-reference.x) + Math.abs(i-reference.y) < distance){
+                        distance = Math.abs(j-reference.x) + Math.abs(i-reference.y);
+                    }
+                }
+            }
+        }
+        return distance;
     }
 
     public Boolean isOutOfBoundary(Point p){
@@ -86,9 +99,11 @@ public class MyAgent extends Agent{
         view = (View)getArguments()[1];
         Random random = new Random();
         position = new Point();
-        position.x = random.nextInt(map.getWidthInTiles());
-        position.y = random.nextInt(map.getWidthInTiles());
-        map.setUnit(position.x,position.y,0);
+        do {
+            position.x = random.nextInt(map.getWidthInTiles());
+            position.y = random.nextInt(map.getWidthInTiles());
+        }while(map.blocked(position.x,position.y));
+        map.setUnit(position.x,position.y,Constants.AGENT);
         view.update(map.getDTO());
         System.out.println("posizione: " + position.x + " " + position.y);
         addBehaviour(new AgentBehavior(this, 125));
