@@ -29,7 +29,7 @@ import java.util.Random;
  * This class represents a jade agent.  It provides {@link #setup()} and {@link #takeDown()} methods to handle
  * correctly agent lifecycle.
  */
-public class MyAgent extends Agent{
+public class AgentBiondo extends Agent{
 
     // References to the model and the view
     private TileBasedMap map;
@@ -137,4 +137,87 @@ public class MyAgent extends Agent{
             move();
         }
     }
+
+    /**
+     Implementazione algoritmo paper
+     */
+    public void algorithm1(){
+        boolean seenRowStart = false;
+        boolean blockPlaced = false;
+
+        while(!blockPlaced){
+            if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
+                attachBlockHere();
+                blockPlaced = true;
+            }
+            else{
+                if(atEndOfRow()){
+                    seenRowStart = true;
+                }
+                followPerimeterCounterclockwise();
+            }
+        }
+    }
+
+    private boolean siteShouldHaveABlock(){
+        if(map.getTerrain(position.x, position.y) == Constants.CELL_TO_FILL)
+            return true;
+        return false;
+    }
+
+    /**
+     * An inside corner is defined as an empty site with
+     * blocks at two adjacent sites
+     */
+    private boolean atInsideCorner() {
+        int count = 0;
+
+        if (position.x+1 < map.getWidthInTiles()){
+            if (map.getTerrain(position.x + 1, position.y) == Constants.FILLED_CELL) {
+                count++;
+            }
+        }
+
+        if (position.x-1 >= 0){
+            if (map.getTerrain(position.x - 1, position.y) == Constants.FILLED_CELL) {
+                count++;
+            }
+        }
+
+        if (position.y+1 < map.getHeightInTiles()){
+            if (map.getTerrain(position.x, position.y+1) == Constants.FILLED_CELL) {
+                count++;
+            }
+        }
+
+        if (position.y-1 >= 0){
+            if (map.getTerrain(position.x, position.y-1) == Constants.FILLED_CELL) {
+                count++;
+            }
+        }
+
+        if(count>=2)
+            return true;
+        return false;
+    }
+
+    /** TODO
+     * An end-of-row site is defined as an empty site
+     * at which either a robot is about to turn a corner
+     * to the left, or the occupancy matrix specifies
+     * that the site directly ahead is to be left empty.
+     */
+    private boolean atEndOfRow(){
+        return false;
+    }
+
+    //TODO: disegna sulla mappa la presenza del blocco... e fa sparire l'agente in qualche modo
+    private void attachBlockHere(){
+
+    }
+
+    //TODO
+    private void followPerimeterCounterclockwise(){}
+
+
 }

@@ -28,6 +28,12 @@ public interface Constants {
     int CELL_TO_FILL = 1;
     /** Indicate a filled cell at a given location */
     int FILLED_CELL = 2;
-    /** Indicate an agent of the game */
-    int AGENT = 3;
+    /** Indicate an agent of the game, heading towards north */
+    int AGENT_NORTH = 3;
+    /** Indicate an agent of the game, heading towards south */
+    int AGENT_SOUTH = 4;
+    /** Indicate an agent of the game, heading towards east */
+    int AGENT_EAST = 5;
+    /** Indicate an agent of the game, heading towards west */
+    int AGENT_WEST = 6;
 }

@@ -35,7 +35,7 @@ public class View extends JFrame {
     /* Last update from the model */
     private int[][] mapDTO;
     /* The list of tile images to render the map */
-    private Image[] tiles = new Image[6];
+    private Image[] tiles = new Image[7];
     /* The offscreen buffer used for rendering in the wonder world of Java 2D */
     private Image buffer;
 
@@ -52,7 +52,10 @@ public class View extends JFrame {
             tiles[Constants.EMPTY_CELL] = ImageIO.read(getResource("res/empty_cell.png"));
             tiles[Constants.CELL_TO_FILL] = ImageIO.read(getResource("res/cell_to_fill.png"));
             tiles[Constants.FILLED_CELL] = ImageIO.read(getResource("res/filled_cell.png"));
-            tiles[Constants.AGENT] = ImageIO.read(getResource("res/agent.png"));
+            tiles[Constants.AGENT_NORTH] = ImageIO.read(getResource("res/agent_north.png"));
+            tiles[Constants.AGENT_SOUTH] = ImageIO.read(getResource("res/agent_south.png"));
+            tiles[Constants.AGENT_WEST] = ImageIO.read(getResource("res/agent_west.png"));
+            tiles[Constants.AGENT_EAST] = ImageIO.read(getResource("res/agent_east.png"));
         } catch (IOException e) {
             System.err.println("Failed to load resources: "+e.getMessage());
             System.exit(0);
