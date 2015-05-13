@@ -1,5 +1,7 @@
 .idea
+.idea/*
 APDescription.txt
 IMA.iml
 MTPs-Main-Container.txt
+out/
 out/*
