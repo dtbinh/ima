@@ -42,9 +42,8 @@ public class AgentBiondo extends Agent{
     /**
      * This methods choose randomly a movement, updates the model and trigger the repaint of the view
      */
-    public void move() {
+    public void move(Point destination) {
         head = Heading.NORTH;
-        Point destination = makeOneStep();
         // Update of the model
         map.setUnit(position.x,position.y,0);
         if(head == Heading.NORTH) {
@@ -62,7 +61,7 @@ public class AgentBiondo extends Agent{
         position = destination;
     }
 
-    private Point makeOneStep(){
+    public Point makeOneStep(){
         Point destination;
         do {
             destination = (Point) position.clone();
@@ -134,7 +133,8 @@ public class AgentBiondo extends Agent{
         }
         @Override
         protected void onTick() {
-            move();
+            Point destination = makeOneStep();
+            move(destination);
         }
     }
 
@@ -217,7 +217,72 @@ public class AgentBiondo extends Agent{
     }
 
     //TODO
-    private void followPerimeterCounterclockwise(){}
+    private Point followPerimeterCounterclockwise(){
+
+        Point destination = (Point) position.clone();;
+
+        if(head == Heading.NORTH){
+            if(map.getTerrain(position.x-1, position.y) != Constants.FILLED_CELL){
+                destination.x -= 1;
+                head = Heading.WEST;
+            }else{
+                if(map.getTerrain(position.x, position.y-1) != Constants.FILLED_CELL){
+                    destination.y -= 1;
+                }
+                else{
+                    destination.x += 1;
+                    head = Heading.EAST;
+                }
+            }
+        }
+
+        else if(head == Heading.SOUTH){
+            if(map.getTerrain(position.x+1, position.y) != Constants.FILLED_CELL){
+                destination.x += 1;
+                head = Heading.EAST;
+            }else{
+                if(map.getTerrain(position.x, position.y+1) != Constants.FILLED_CELL){
+                    destination.y += 1;
+                }
+                else{
+                    destination.x -= 1;
+                    head = Heading.WEST;
+                }
+            }
+        }
+
+        else if(head == Heading.EAST){
+            if(map.getTerrain(position.x, position.y-1) != Constants.FILLED_CELL){
+                destination.y -= 1;
+                head = Heading.NORTH;
+            }else{
+                if(map.getTerrain(position.x, position.y-1) != Constants.FILLED_CELL){
+                    destination.x += 1;
+                }
+                else{
+                    destination.y += 1;
+                    head = Heading.SOUTH;
+                }
+            }
+        }
+
+        else if(head == Heading.WEST){
+            if(map.getTerrain(position.x, position.y+1) != Constants.FILLED_CELL){
+                destination.y += 1;
+                head = Heading.SOUTH;
+            }else{
+                if(map.getTerrain(position.x, position.y-1) != Constants.FILLED_CELL){
+                    destination.x -= 1;
+                }
+                else{
+                    destination.y -= 1;
+                    head = Heading.NORTH;
+                }
+            }
+        }
+
+        return destination;
+    }
 
 
 }
