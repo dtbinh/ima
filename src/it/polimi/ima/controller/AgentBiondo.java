@@ -43,7 +43,7 @@ public class AgentBiondo extends Agent{
      * This methods choose randomly a movement, updates the model and trigger the repaint of the view
      */
     public void move(Point destination) {
-        head = Heading.NORTH;
+
         // Update of the model
         map.setUnit(position.x,position.y,0);
         if(head == Heading.NORTH) {
@@ -118,6 +118,7 @@ public class AgentBiondo extends Agent{
             position.y = random.nextInt(map.getWidthInTiles());
         }while(map.blocked(position.x,position.y));
         map.setUnit(position.x, position.y, Constants.AGENT_NORTH);
+        head = Heading.NORTH;
         view.update(map.getDTO());
         System.out.println("posizione: " + position.x + " " + position.y);
         addBehaviour(new AgentBehavior(this, 125));
