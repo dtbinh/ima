@@ -33,7 +33,7 @@ public class IMAMain {
      */
     public static void main(String[] argv) {
         TileBasedMap map = new TileBasedMap();
-        View view = new View(map.getDTO());
+        View view = new View(map.getTerrainDTO(), map.getAgentDTO());
         Runtime runtime = jade.core.Runtime.instance();
         runtime.setCloseVM(true);
         ContainerController cc =  runtime.createMainContainer(new ProfileImpl(false));

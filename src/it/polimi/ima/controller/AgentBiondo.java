@@ -15,8 +15,6 @@
 package it.polimi.ima.controller;
 
 import it.polimi.ima.utils.Constants;
-import it.polimi.ima.utils.Heading;
-import it.polimi.ima.utils.RandomDirection;
 import it.polimi.ima.model.TileBasedMap;
 import it.polimi.ima.view.View;
 import jade.core.Agent;
@@ -30,7 +28,7 @@ import java.util.Random;
  * correctly agent lifecycle.
  */
 public class AgentBiondo extends Agent{
-
+/*
     // References to the model and the view
     private TileBasedMap map;
     private View view;
@@ -42,7 +40,7 @@ public class AgentBiondo extends Agent{
     /**
      * This methods choose randomly a movement, updates the model and trigger the repaint of the view
      */
-    public void move(Point destination) {
+/*    public void move(Point destination) {
 
         // Update of the model
         map.setUnit(position.x,position.y,0);
@@ -127,7 +125,7 @@ public class AgentBiondo extends Agent{
     /**
      * this behavior is used to deal with update job for painting
      */
-    private class AgentBehavior extends TickerBehaviour
+/*    private class AgentBehavior extends TickerBehaviour
     {
         public AgentBehavior(jade.core.Agent a, long period) {
             super(a, period);
@@ -142,7 +140,7 @@ public class AgentBiondo extends Agent{
     /**
      Implementazione algoritmo paper
      */
-    public void algorithm1(){
+/*    public void algorithm1(){
         boolean seenRowStart = false;
         boolean blockPlaced = false;
 
@@ -170,7 +168,7 @@ public class AgentBiondo extends Agent{
      * An inside corner is defined as an empty site with
      * blocks at two adjacent sites
      */
-    private boolean atInsideCorner() {
+/*    private boolean atInsideCorner() {
         int count = 0;
 
         if (position.x+1 < map.getWidthInTiles()){
@@ -208,7 +206,7 @@ public class AgentBiondo extends Agent{
      * to the left, or the occupancy matrix specifies
      * that the site directly ahead is to be left empty.
      */
-    private boolean atEndOfRow(){
+/*    private boolean atEndOfRow(){
         return false;
     }
 
@@ -285,5 +283,5 @@ public class AgentBiondo extends Agent{
         return destination;
     }
 
-
+*/
 }

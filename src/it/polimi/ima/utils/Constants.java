@@ -22,18 +22,4 @@ public interface Constants {
     int WIDTH = 30;
     /** The map height in tiles */
     int HEIGHT = 30;
-    /** Indicate terrain to be left empty at a given location */
-    int EMPTY_CELL = 0;
-    /** Indicate a cell to fill at a given location */
-    int CELL_TO_FILL = 1;
-    /** Indicate a filled cell at a given location */
-    int FILLED_CELL = 2;
-    /** Indicate an agent of the game, heading towards north */
-    int AGENT_NORTH = 3;
-    /** Indicate an agent of the game, heading towards south */
-    int AGENT_SOUTH = 4;
-    /** Indicate an agent of the game, heading towards east */
-    int AGENT_EAST = 5;
-    /** Indicate an agent of the game, heading towards west */
-    int AGENT_WEST = 6;
 }

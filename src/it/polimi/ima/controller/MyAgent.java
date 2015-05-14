@@ -14,9 +14,9 @@
 
 package it.polimi.ima.controller;
 
+import it.polimi.ima.utils.AgentType;
 import it.polimi.ima.utils.Constants;
-import it.polimi.ima.utils.Heading;
-import it.polimi.ima.utils.RandomDirection;
+import it.polimi.ima.utils.Movement;
 import it.polimi.ima.model.TileBasedMap;
 import it.polimi.ima.view.View;
 import jade.core.Agent;
@@ -34,29 +34,32 @@ public class MyAgent extends Agent{
     // References to the model and the view
     private TileBasedMap map;
     private View view;
-    private Heading head;
 
     // Position of the agent
     private Point position;
+
+    private Movement lastMovement;
 
     /**
      * This methods choose randomly a movement, updates the model and trigger the repaint of the view
      */
     public void move(Point destination) {
         // Update of the model
-        map.setUnit(position.x,position.y,0);
-        if(head == Heading.NORTH) {
-            map.setUnit(destination.x, destination.y, Constants.AGENT_NORTH);
-        }else if (head == Heading.EAST) {
-            map.setUnit(destination.x, destination.y, Constants.AGENT_EAST);
-        }else if (head == Heading.WEST) {
-            map.setUnit(destination.x, destination.y, Constants.AGENT_WEST);
-        }else {
-            map.setUnit(destination.x, destination.y, Constants.AGENT_SOUTH);
+        if(lastMovement != Movement.STOP) {
+            map.setUnit(position.x,position.y,AgentType.NO_AGENT);
+            if(lastMovement == Movement.UP) {
+                map.setUnit(destination.x, destination.y, AgentType.AGENT_NORTH);
+            } else if(lastMovement == Movement.DOWN) {
+                map.setUnit(destination.x, destination.y, AgentType.AGENT_SOUTH);
+            } else if (lastMovement == Movement.LEFT) {
+                map.setUnit(destination.x, destination.y, AgentType.AGENT_WEST);
+            } else if (lastMovement == Movement.RIGHT) {
+                map.setUnit(destination.x, destination.y, AgentType.AGENT_EAST);
+            }
         }
         System.out.println("posizione: " + position.x + " " + position.y);
         // Update of the view
-        view.update(map.getDTO());
+        view.update(map.getTerrainDTO(), map.getAgentDTO());
         position = destination;
     }
 
@@ -64,26 +67,23 @@ public class MyAgent extends Agent{
         Point destination;
         do {
             destination = (Point) position.clone();
-            RandomDirection d = RandomDirection.getRandomDirection();
-            switch (d) {
+            Movement movement = Movement.getRandomMovement();
+            switch (movement) {
                 case UP:
                     destination.y -= 1;
-                    head = Heading.NORTH;
                     break;
                 case DOWN:
                     destination.y += 1;
-                    head = Heading.SOUTH;
                     break;
                 case LEFT:
                     destination.x -= 1;
-                    head = Heading.WEST;
                     break;
                 case RIGHT:
                     destination.x += 1;
-                    head = Heading.EAST;
                 default:
                     break;
             }
+            lastMovement = movement;
         } while (isOutOfBoundary(destination) || computeDistances(destination)<2);
         return destination;
     }
@@ -92,7 +92,7 @@ public class MyAgent extends Agent{
         int distance = Integer.MAX_VALUE;
         for(int i=0; i<Constants.HEIGHT; i++){
             for (int j=0; j<Constants.WIDTH; j++){
-                if(map.getUnit(j,i) != 0 && (reference.x != j || reference.y != i) &&
+                if(map.getUnit(j,i) != AgentType.NO_AGENT && (reference.x != j || reference.y != i) &&
                         !(i==position.y && j==position.x)){
                     if (Math.abs(j-reference.x) + Math.abs(i-reference.y) < distance){
                         distance = Math.abs(j-reference.x) + Math.abs(i-reference.y);
@@ -116,9 +116,8 @@ public class MyAgent extends Agent{
             position.x = random.nextInt(map.getWidthInTiles());
             position.y = random.nextInt(map.getWidthInTiles());
         }while(map.blocked(position.x,position.y));
-        map.setUnit(position.x, position.y, Constants.AGENT_NORTH);
-        head = Heading.NORTH;
-        view.update(map.getDTO());
+        map.setUnit(position.x, position.y, AgentType.AGENT_NORTH);
+        view.update(map.getTerrainDTO(), map.getAgentDTO());
         System.out.println("posizione: " + position.x + " " + position.y);
         addBehaviour(new AgentBehavior(this, 125));
     }

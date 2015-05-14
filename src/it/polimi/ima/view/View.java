@@ -14,7 +14,10 @@
 
 package it.polimi.ima.view;
 
+import it.polimi.ima.utils.AgentType;
 import it.polimi.ima.utils.Constants;
+import it.polimi.ima.utils.TerrainType;
+import jade.core.Agent;
 
 import java.awt.Graphics;
 import java.awt.Image;
@@ -22,20 +25,24 @@ import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.EnumMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
 /**
  * The following class is in charge of rendering the state of the model upon request
- * To inform this class about the state of the model, a DTO is passed to both the constructor {@link #View(int[][])}
- * of the class and to the {@link #update(int[][])} method
+ * To inform this class about the state of the model, a DTO is passed to both the constructor {@link #View(TerrainType[][], AgentType[][])}
+ * of the class and to the {@link #update(TerrainType[][], AgentType[][])} method
  */
 public class View extends JFrame {
     /* Last update from the model */
-    private int[][] mapDTO;
+    private TerrainType[][] terrainDTO;
+    private AgentType[][] agentDTO;
     /* The list of tile images to render the map */
-    private Image[] tiles = new Image[7];
+    private Map<TerrainType,Image> terrainTiles = new EnumMap<>(TerrainType.class);
+    private Map<AgentType,Image> agentTiles = new EnumMap<>(AgentType.class);
     /* The offscreen buffer used for rendering in the wonder world of Java 2D */
     private Image buffer;
 
@@ -43,19 +50,20 @@ public class View extends JFrame {
     /**
      * Create a new view for visualizing the game
      *
-     * @param mapDTO a DTO representing the current state of the model
+     * @param terrainDTO a DTO representing the current state of the model
      */
-    public View(int[][] mapDTO) {
-        this.mapDTO = mapDTO;
+    public View(TerrainType[][] terrainDTO, AgentType[][] agentDTO) {
+        this.terrainDTO = terrainDTO;
+        this.agentDTO = agentDTO;
         // Assign to each tile its image
         try {
-            tiles[Constants.EMPTY_CELL] = ImageIO.read(getResource("res/empty_cell.png"));
-            tiles[Constants.CELL_TO_FILL] = ImageIO.read(getResource("res/cell_to_fill.png"));
-            tiles[Constants.FILLED_CELL] = ImageIO.read(getResource("res/filled_cell.png"));
-            tiles[Constants.AGENT_NORTH] = ImageIO.read(getResource("res/agent_north.png"));
-            tiles[Constants.AGENT_SOUTH] = ImageIO.read(getResource("res/agent_south.png"));
-            tiles[Constants.AGENT_WEST] = ImageIO.read(getResource("res/agent_west.png"));
-            tiles[Constants.AGENT_EAST] = ImageIO.read(getResource("res/agent_east.png"));
+            terrainTiles.put(TerrainType.EMPTY, ImageIO.read(getResource("res/empty_cell.png")));
+            terrainTiles.put(TerrainType.TO_FILL, ImageIO.read(getResource("res/cell_to_fill.png")));
+            terrainTiles.put(TerrainType.FILLED, ImageIO.read(getResource("res/filled_cell.png")));
+            agentTiles.put(AgentType.AGENT_NORTH, ImageIO.read(getResource("res/agent_north.png")));
+            agentTiles.put(AgentType.AGENT_SOUTH, ImageIO.read(getResource("res/agent_south.png")));
+            agentTiles.put(AgentType.AGENT_WEST, ImageIO.read(getResource("res/agent_west.png")));
+            agentTiles.put(AgentType.AGENT_EAST, ImageIO.read(getResource("res/agent_east.png")));
         } catch (IOException e) {
             System.err.println("Failed to load resources: "+e.getMessage());
             System.exit(0);
@@ -100,7 +108,12 @@ public class View extends JFrame {
 
         for (int x=0;x<Constants.HEIGHT;x++) {
             for (int y=0;y<Constants.WIDTH;y++) {
-                g.drawImage(tiles[mapDTO[x][y]],x*20,y*20,null);
+                if(agentDTO[x][y] != AgentType.NO_AGENT){
+                    g.drawImage(agentTiles.get(agentDTO[x][y]),x*20,y*20,null);
+                }
+                else {
+                    g.drawImage(terrainTiles.get(terrainDTO[x][y]), x * 20, y * 20, null);
+                }
             }
         }
 
@@ -111,10 +124,11 @@ public class View extends JFrame {
     /**
      * Update the view according to the new state of the model
      *
-     * @param mapDTO a DTO representing the current state of the model
+     * @param terrainDTO a DTO representing the current state of the model
      */
-    public void update(int[][] mapDTO){
-        this.mapDTO = mapDTO;
+    public void update(TerrainType[][] terrainDTO, AgentType[][] agentDTO){
+        this.terrainDTO = terrainDTO;
+        this.agentDTO = agentDTO;
         repaint();
     }
 }
