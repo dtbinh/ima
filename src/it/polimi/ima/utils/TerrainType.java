@@ -6,5 +6,6 @@ package it.polimi.ima.utils;
 public enum TerrainType {
     EMPTY,
     TO_FILL,
-    FILLED
+    FILLED,
+    LANDMARK
 }
