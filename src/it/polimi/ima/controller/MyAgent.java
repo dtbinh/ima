@@ -121,7 +121,7 @@ public class MyAgent extends Agent{
         map.setUnit(position.x, position.y, Constants.AGENT_NORTH);
         view.update(map.getDTO());
         System.out.println("posizione: " + position.x + " " + position.y);
-        addBehaviour(new AgentBehavior(this, 125));
+        addBehaviour(new AgentBehavior(this, 1));
     }
 
     /**
