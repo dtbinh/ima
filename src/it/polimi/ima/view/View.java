@@ -14,10 +14,9 @@
 
 package it.polimi.ima.view;
 
-import it.polimi.ima.utils.AgentType;
+import it.polimi.ima.utils.AgentOrientation;
 import it.polimi.ima.utils.Constants;
 import it.polimi.ima.utils.TerrainType;
-import jade.core.Agent;
 
 import java.awt.Graphics;
 import java.awt.Image;
@@ -33,16 +32,16 @@ import javax.swing.JFrame;
 
 /**
  * The following class is in charge of rendering the state of the model upon request
- * To inform this class about the state of the model, a DTO is passed to both the constructor {@link #View(TerrainType[][], AgentType[][])}
- * of the class and to the {@link #update(TerrainType[][], AgentType[][])} method
+ * To inform this class about the state of the model, a DTO is passed to both the constructor {@link #View(TerrainType[][], AgentOrientation[][])}
+ * of the class and to the {@link #update(TerrainType[][], AgentOrientation[][])} method
  */
 public class View extends JFrame {
     /* Last update from the model */
     private TerrainType[][] terrainDTO;
-    private AgentType[][] agentDTO;
+    private AgentOrientation[][] agentDTO;
     /* The list of tile images to render the map */
     private Map<TerrainType,Image> terrainTiles = new EnumMap<>(TerrainType.class);
-    private Map<AgentType,Image> agentTiles = new EnumMap<>(AgentType.class);
+    private Map<AgentOrientation,Image> agentTiles = new EnumMap<>(AgentOrientation.class);
     /* The offscreen buffer used for rendering in the wonder world of Java 2D */
     private Image buffer;
 
@@ -52,7 +51,7 @@ public class View extends JFrame {
      *
      * @param terrainDTO a DTO representing the current state of the model
      */
-    public View(TerrainType[][] terrainDTO, AgentType[][] agentDTO) {
+    public View(TerrainType[][] terrainDTO, AgentOrientation[][] agentDTO) {
         this.terrainDTO = terrainDTO;
         this.agentDTO = agentDTO;
         // Assign to each tile its image
@@ -60,10 +59,10 @@ public class View extends JFrame {
             terrainTiles.put(TerrainType.EMPTY, ImageIO.read(getResource("res/empty_cell.png")));
             terrainTiles.put(TerrainType.TO_FILL, ImageIO.read(getResource("res/cell_to_fill.png")));
             terrainTiles.put(TerrainType.FILLED, ImageIO.read(getResource("res/filled_cell.png")));
-            agentTiles.put(AgentType.AGENT_NORTH, ImageIO.read(getResource("res/agent_north.png")));
-            agentTiles.put(AgentType.AGENT_SOUTH, ImageIO.read(getResource("res/agent_south.png")));
-            agentTiles.put(AgentType.AGENT_WEST, ImageIO.read(getResource("res/agent_west.png")));
-            agentTiles.put(AgentType.AGENT_EAST, ImageIO.read(getResource("res/agent_east.png")));
+            agentTiles.put(AgentOrientation.AGENT_NORTH, ImageIO.read(getResource("res/agent_north.png")));
+            agentTiles.put(AgentOrientation.AGENT_SOUTH, ImageIO.read(getResource("res/agent_south.png")));
+            agentTiles.put(AgentOrientation.AGENT_WEST, ImageIO.read(getResource("res/agent_west.png")));
+            agentTiles.put(AgentOrientation.AGENT_EAST, ImageIO.read(getResource("res/agent_east.png")));
         } catch (IOException e) {
             System.err.println("Failed to load resources: "+e.getMessage());
             System.exit(0);
@@ -95,7 +94,6 @@ public class View extends JFrame {
      */
     public void paint(Graphics graphics) {
         // create an offscreen buffer to render the map
-
         if (buffer == null) {
             buffer = new BufferedImage(700, 700, BufferedImage.TYPE_INT_ARGB);
         }
@@ -108,7 +106,7 @@ public class View extends JFrame {
 
         for (int x=0;x<Constants.HEIGHT;x++) {
             for (int y=0;y<Constants.WIDTH;y++) {
-                if(agentDTO[x][y] != AgentType.NO_AGENT){
+                if(agentDTO[x][y] != AgentOrientation.NO_AGENT){
                     g.drawImage(agentTiles.get(agentDTO[x][y]),x*20,y*20,null);
                 }
                 else {
@@ -126,7 +124,7 @@ public class View extends JFrame {
      *
      * @param terrainDTO a DTO representing the current state of the model
      */
-    public void update(TerrainType[][] terrainDTO, AgentType[][] agentDTO){
+    public void update(TerrainType[][] terrainDTO, AgentOrientation[][] agentDTO){
         this.terrainDTO = terrainDTO;
         this.agentDTO = agentDTO;
         repaint();

@@ -14,7 +14,7 @@
 
 package it.polimi.ima.model;
 
-import it.polimi.ima.utils.AgentType;
+import it.polimi.ima.utils.AgentOrientation;
 import it.polimi.ima.utils.Constants;
 import it.polimi.ima.utils.TerrainType;
 
@@ -27,7 +27,7 @@ public class TileBasedMap {
     /** The terrain settings for each tile in the map */
     private TerrainType[][] terrain = new TerrainType[Constants.WIDTH][Constants.HEIGHT];
     /** The unit in each tile of the map */
-    private AgentType[][] agent = new AgentType[Constants.WIDTH][Constants.HEIGHT];
+    private AgentOrientation[][] agent = new AgentOrientation[Constants.WIDTH][Constants.HEIGHT];
 
     /**
      * Create a new test map with some default configuration
@@ -42,7 +42,7 @@ public class TileBasedMap {
 
         for(int i=0; i<Constants.HEIGHT; i++){
             for(int j=0; j<Constants.WIDTH; j++){
-                agent[i][j] = AgentType.NO_AGENT;
+                agent[i][j] = AgentOrientation.NO_AGENT;
             }
         }
     }
@@ -82,7 +82,7 @@ public class TileBasedMap {
      * @param y The y coordinate of the tile to check for a unit
      * @return The ID of the unit at the given location or 0 if there is no unit
      */
-    public AgentType getUnit(int x, int y) {
+    public AgentOrientation getUnit(int x, int y) {
         return agent[x][y];
     }
 
@@ -91,43 +91,47 @@ public class TileBasedMap {
      *
      * @param x The x coordinate of the location where the unit should be set
      * @param y The y coordinate of the location where the unit should be set
-     * @param agentType The ID of the unit to be placed on the map, or 0 to clear the unit at the
+     * @param agentOrientation The ID of the unit to be placed on the map, or 0 to clear the unit at the
      * given location
      */
-    public void setUnit(int x, int y, AgentType agentType) {
-        agent[x][y] = agentType;
+    public void setUnit(int x, int y, AgentOrientation agentOrientation) {
+        agent[x][y] = agentOrientation;
     }
 
     /**
      * @see TileBasedMap#blocked(int, int)
      */
     public boolean blocked(int x, int y) {
-        return getUnit(x, y) != AgentType.NO_AGENT || terrain[x][y] == TerrainType.FILLED;
+        return getUnit(x, y) != AgentOrientation.NO_AGENT || terrain[x][y] == TerrainType.FILLED;
     }
 
     /**
      * @see TileBasedMap#getHeightInTiles()
      */
     public int getHeightInTiles() {
-        return Constants.WIDTH;
+        return Constants.HEIGHT;
     }
 
     /**
      * @see TileBasedMap#getWidthInTiles()
      */
     public int getWidthInTiles() {
-        return Constants.HEIGHT;
+        return Constants.WIDTH;
     }
 
     /**
-     * Compute and return a DTO representing the state of the model
-     * @return the dto representing the state of the model
+     * Compute and return a DTO representing the state of the model of the terrain
+     * @return the DTO representing the state of the model
      */
-    public TerrainType[][] getTerrainDTO(){
+    public TerrainType[][] getTerrainDTO() {
         return terrain;
     }
 
-    public AgentType[][] getAgentDTO(){
+    /**
+     * Compute and return a DTO representing the positions of the agents
+     * @return the DTO representing the positions of the agents
+     */
+    public AgentOrientation[][] getAgentDTO() {
         return agent;
     }
 

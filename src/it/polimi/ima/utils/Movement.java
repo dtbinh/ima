@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * This enum representing the possible directions in which an agent can move
+ * Enum representing the possible directions in which an agent can move
  */
 public enum Movement {
     UP,DOWN,LEFT,RIGHT,STOP;

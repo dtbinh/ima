@@ -15,11 +15,12 @@
 package it.polimi.ima.utils;
 
 /**
- * Enum representing the different kind of terrain that compose the map
+ * Enum representing the different orientations an agent can assume
  */
-public enum TerrainType {
-    EMPTY,
-    TO_FILL,
-    FILLED,
-    LANDMARK
+public enum AgentOrientation {
+    NO_AGENT,
+    AGENT_NORTH,
+    AGENT_SOUTH,
+    AGENT_EAST,
+    AGENT_WEST
 }

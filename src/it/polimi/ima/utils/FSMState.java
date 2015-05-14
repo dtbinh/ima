@@ -15,11 +15,10 @@
 package it.polimi.ima.utils;
 
 /**
- * Enum representing the different kind of terrain that compose the map
+ * Enum representing the different internal states an agent can assume
  */
-public enum TerrainType {
-    EMPTY,
-    TO_FILL,
-    FILLED,
-    LANDMARK
+public enum FSMState {
+    WANDERING,
+    PERIMETER_FOLLOWING,
+    ALGORITHM1
 }
