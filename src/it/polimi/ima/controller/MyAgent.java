@@ -42,9 +42,7 @@ public class MyAgent extends Agent{
     /**
      * This methods choose randomly a movement, updates the model and trigger the repaint of the view
      */
-    public void move() {
-        head = Heading.NORTH;
-        Point destination = makeOneStep();
+    public void move(Point destination) {
         // Update of the model
         map.setUnit(position.x,position.y,0);
         if(head == Heading.NORTH) {
@@ -119,6 +117,7 @@ public class MyAgent extends Agent{
             position.y = random.nextInt(map.getWidthInTiles());
         }while(map.blocked(position.x,position.y));
         map.setUnit(position.x, position.y, Constants.AGENT_NORTH);
+        head = Heading.NORTH;
         view.update(map.getDTO());
         System.out.println("posizione: " + position.x + " " + position.y);
         addBehaviour(new AgentBehavior(this, 125));
@@ -134,7 +133,7 @@ public class MyAgent extends Agent{
         }
         @Override
         protected void onTick() {
-            move();
+            move(makeOneStep());
         }
     }
 }
