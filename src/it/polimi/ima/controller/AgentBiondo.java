@@ -40,11 +40,16 @@ public class AgentBiondo extends Agent{
     // Last movement of the agent
     private Movement lastMovement;
 
+    private boolean seenRowStart;
+    private boolean blockPlaced;
+
     /**
      * Framework method to set up the agent
      */
     public void setup() {
         currentState = FSMState.WANDERING;
+        seenRowStart = false;
+        blockPlaced = false;
         map = (TileBasedMap) getArguments()[0];
         Random random = new Random();
         position = new Point();
@@ -189,10 +194,8 @@ public class AgentBiondo extends Agent{
      Implementazione algoritmo paper
      */
     private void algorithm1(){
-        boolean seenRowStart = false;
-        boolean blockPlaced = false;
 
-        while(!blockPlaced){
+        if(!blockPlaced){
             if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
                 attachBlockHere();
                 blockPlaced = true;
@@ -395,6 +398,8 @@ public class AgentBiondo extends Agent{
 
         //reimposta lo stato del robot a WANDERING
         currentState = FSMState.WANDERING;
+        seenRowStart = false;
+        blockPlaced = false;
 
         //resetta la posizione del robot
         map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
