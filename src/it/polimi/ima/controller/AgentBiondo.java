@@ -31,8 +31,6 @@ public class AgentBiondo extends Agent{
 
     // References to the model
     private TileBasedMap map;
-    // Agent id
-    private int id;
     // Current state of the agent
     private FSMState currentState;
 
@@ -423,8 +421,6 @@ public class AgentBiondo extends Agent{
     private void attachBlockHere(){
         // riempie la cella con un blocco
         map.fillCell(position.x, position.y);
-
-        System.out.println("Agent " + id + " Attach block to  " + position.x + "," + position.y);
 
         //reimposta lo stato del robot a WANDERING
         currentState = FSMState.WANDERING;
