@@ -193,6 +193,26 @@ public class AgentBiondo extends Agent{
      */
     private void algorithm1(){
 
+        if(suicide()){
+
+            System.out.println("Goodbye, cruel world. =(");
+
+            //reimposta lo stato del robot a WANDERING
+            currentState = FSMState.WANDERING;
+            seenRowStart = false;
+
+            //resetta la posizione del robot
+            map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+            Random random = new Random();
+            do {
+                position.x = random.nextInt(map.getWidthInTiles());
+                position.y = random.nextInt(map.getWidthInTiles());
+            } while (map.blocked(position.x, position.y));
+            map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
+            return;
+        }
+
+
         if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
             attachBlockHere();
         }
@@ -203,6 +223,13 @@ public class AgentBiondo extends Agent{
             followPerimeterCounterclockwise();
         }
 
+    }
+
+    private boolean suicide() {
+        if (map.getTerrain(position.x, position.y) == TerrainType.FILLED) {
+            return true;
+        }
+        return false;
     }
 
     /*
@@ -239,25 +266,25 @@ public class AgentBiondo extends Agent{
         if(position.x+1 < Constants.WIDTH
             &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
             lastMovement = Movement.DOWN;
-            System.out.println("trovato blocco, giro giu");
+            //System.out.println("trovato blocco, giro giu");
             return true;
         }
         if(position.x-1 >= 0
             &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
             lastMovement = Movement.UP;
-            System.out.println("trovato blocco, giro su");
+            //System.out.println("trovato blocco, giro su");
             return true;
         }
         if(position.y+1 < Constants.HEIGHT
             &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
             lastMovement = Movement.LEFT;
-            System.out.println("trovato blocco, giro a sinistra");
+            //System.out.println("trovato blocco, giro a sinistra");
             return true;
         }
         if(position.y-1 >= 0
             &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
             lastMovement = Movement.RIGHT;
-            System.out.println("trovato blocco, giro a destra");
+            //System.out.println("trovato blocco, giro a destra");
             return true;
         }
         return false;

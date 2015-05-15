@@ -41,7 +41,7 @@ public class IMAMain {
         try {
             int id = 0;
             // create enemy tank agent and start it
-            for(int i=0; i<10; i++) {
+            for(int i=0; i<100; i++) {
                 id = i+1;
                 System.out.println("Agent: " + id);
                 Object[] args = {map};
