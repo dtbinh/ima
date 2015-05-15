@@ -213,23 +213,26 @@ public class AgentBiondo extends Agent{
      * landmark vi può essere una sola cella di tipo TO_FILL)
      */
     private Point goToFirstBlock() {
-        Point destination;
-        destination = position;
+        Point destination = (Point)position.clone();
 
         if(map.getTerrain(position.x+1, position.y) == TerrainType.TO_FILL) {
             destination.x += 1;
+            lastMovement = Movement.RIGHT;
             return destination;
         }
         if(map.getTerrain(position.x-1, position.y) == TerrainType.TO_FILL) {
             destination.x -= 1;
+            lastMovement = Movement.LEFT;
             return destination;
         }
         if(map.getTerrain(position.x, position.y+1) == TerrainType.TO_FILL) {
             destination.y += 1;
+            lastMovement = Movement.DOWN;
             return destination;
         }
 
         destination.y -= 1;
+        lastMovement = Movement.UP;
         return destination;
 
     }
