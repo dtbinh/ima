@@ -19,6 +19,7 @@ package it.polimi.ima.utils;
  */
 public enum FSMState {
     WANDERING,
+    PLACING_FIRST_BLOCK,
     PERIMETER_FOLLOWING,
     ALGORITHM1
 }

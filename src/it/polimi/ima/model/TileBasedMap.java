@@ -121,6 +121,16 @@ public class TileBasedMap {
     }
 
     /**
+     * Set the unit at the given location
+     *
+     * @param x The x coordinate of the location to fill
+     * @param y The y coordinate of the location to fill
+     */
+    public void fillCell(int x, int y) {
+        terrain[x][y] = TerrainType.FILLED;
+    }
+
+    /**
      * @see TileBasedMap#blocked(int, int)
      */
     public boolean blocked(int x, int y) {

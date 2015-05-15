@@ -44,6 +44,7 @@ public class AgentBiondo extends Agent{
      * Framework method to set up the agent
      */
     public void setup() {
+        currentState = FSMState.WANDERING;
         map = (TileBasedMap) getArguments()[0];
         Random random = new Random();
         position = new Point();
@@ -140,7 +141,7 @@ public class AgentBiondo extends Agent{
 
         @Override
         protected void onTick() {
-            move(makeOneStep());
+            agentFSM();
         }
     }
 
@@ -157,8 +158,17 @@ public class AgentBiondo extends Agent{
                         followPerimeterCounterclockwise();
                     }
                 }else {
-                    move(makeOneStep());
+                    if(atLandmark()){
+                        currentState = FSMState.PLACING_FIRST_BLOCK;
+                        System.out.println("sono al landmark");
+                        move(goToFirstBlock());
+                    }else {
+                        move(makeOneStep());
+                    }
                 }
+                break;
+            case PLACING_FIRST_BLOCK:
+                attachBlockHere();
                 break;
             case PERIMETER_FOLLOWING:
                 if(atLandmark()){
@@ -197,6 +207,32 @@ public class AgentBiondo extends Agent{
         }
     }
 
+    /*
+     * Metodo chiamato quando troov il landmark senza alcun blocco a fianco.
+     * Mi sposto verso il buco da riempire. (Per regola, a fianco di un
+     * landmark vi può essere una sola cella di tipo TO_FILL)
+     */
+    private Point goToFirstBlock() {
+        Point destination;
+        destination = position;
+
+        if(map.getTerrain(position.x+1, position.y) == TerrainType.TO_FILL) {
+            destination.x += 1;
+            return destination;
+        }
+        if(map.getTerrain(position.x-1, position.y) == TerrainType.TO_FILL) {
+            destination.x -= 1;
+            return destination;
+        }
+        if(map.getTerrain(position.x, position.y+1) == TerrainType.TO_FILL) {
+            destination.y += 1;
+            return destination;
+        }
+
+        destination.y -= 1;
+        return destination;
+
+    }
 
     private boolean approachingPerimeter(){
         if(map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
@@ -338,13 +374,25 @@ public class AgentBiondo extends Agent{
 
     }
 
-    /** TODO: disegna sulla mappa la presenza del blocco,
+    /** Segnala sulla mappa la presenza del blocco,
      *  imposta lo stato dell'agente a WANDERNING e
      *  sposta l'agente a ridosso di uno dei bordi della mappa,
      *  come se  fosse tornato sulla scena con un nuovo blocco
      */
     private void attachBlockHere(){
+        // riempie la cella con un blocco
+        map.fillCell(position.x, position.y);
 
+        //reimposta lo stato del robot a WANDERING
+        currentState = FSMState.WANDERING;
+
+        //resetta la posizione del robot
+        Random random = new Random();
+        do {
+            position.x = random.nextInt(map.getWidthInTiles());
+            position.y = random.nextInt(map.getWidthInTiles());
+        } while (map.blocked(position.x, position.y));
+        map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
     }
 
 
