@@ -16,7 +16,6 @@ package it.polimi.ima.controller;
 
 import it.polimi.ima.utils.*;
 import it.polimi.ima.model.TileBasedMap;
-import it.polimi.ima.view.View;
 import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
 
@@ -32,7 +31,7 @@ public class AgentBiondo extends Agent{
 
     // References to the model and the view
     private TileBasedMap map;
-    private View view;
+
     private FSMState currentState;
 
     // Position of the agent
@@ -46,7 +45,6 @@ public class AgentBiondo extends Agent{
      */
     public void setup() {
         map = (TileBasedMap) getArguments()[0];
-        view = (View) getArguments()[1];
         Random random = new Random();
         position = new Point();
         do {
@@ -54,7 +52,6 @@ public class AgentBiondo extends Agent{
             position.y = random.nextInt(map.getWidthInTiles());
         } while (map.blocked(position.x, position.y));
         map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
-        view.update(map.getTerrainDTO(), map.getAgentDTO());
         System.out.println("posizione: " + position.x + " " + position.y);
         addBehaviour(new AgentBehavior(this, 125));
     }
@@ -76,8 +73,6 @@ public class AgentBiondo extends Agent{
                 map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_EAST);
             }
         }
-        // Update of the view
-        view.update(map.getTerrainDTO(), map.getAgentDTO());
         position = destination;
     }
 

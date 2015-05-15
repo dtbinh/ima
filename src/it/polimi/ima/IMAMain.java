@@ -39,13 +39,19 @@ public class IMAMain {
         ContainerController cc =  runtime.createMainContainer(new ProfileImpl(false));
 
         try {
+            int id = 0;
             // create enemy tank agent and start it
             for(int i=0; i<10; i++) {
-                int id = i+1;
+                id = i+1;
                 System.out.println("Agent: " + id);
-                Object[] args = {map, view};
+                Object[] args = {map};
                 (cc.createNewAgent("agent" + id, "it.polimi.ima.controller.MyAgent", args)).start();
             }
+            id++;
+            System.out.println("GUI Agent: " + id);
+            Object[] args = {map, view};
+            (cc.createNewAgent("GUIAgent" + id, "it.polimi.ima.controller.GUIUpdaterAgent", args)).start();
+
         } catch (StaleProxyException e) {
             e.printStackTrace();
         }
