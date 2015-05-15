@@ -160,7 +160,6 @@ public class AgentBiondo extends Agent{
                 }else {
                     if(atLandmark()){
                         currentState = FSMState.PLACING_FIRST_BLOCK;
-                        System.out.println("sono al landmark");
                         move(goToFirstBlock());
                     }else {
                         move(makeOneStep());
@@ -240,22 +239,26 @@ public class AgentBiondo extends Agent{
     private boolean approachingPerimeter(){
         if(position.x+1 < Constants.WIDTH
             &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
-            lastMovement = Movement.UP;
+            lastMovement = Movement.DOWN;
+            System.out.println("trovato blocco, giro giu");
             return true;
         }
         if(position.x-1 >= 0
             &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
-            lastMovement = Movement.DOWN;
+            lastMovement = Movement.UP;
+            System.out.println("trovato blocco, giro su");
             return true;
         }
         if(position.y+1 < Constants.HEIGHT
             &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
             lastMovement = Movement.LEFT;
+            System.out.println("trovato blocco, giro a sinistra");
             return true;
         }
         if(position.y-1 >= 0
             &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
             lastMovement = Movement.RIGHT;
+            System.out.println("trovato blocco, giro a destra");
             return true;
         }
         return false;
@@ -443,7 +446,7 @@ public class AgentBiondo extends Agent{
                 destination.y -= 1;
                 lastMovement = Movement.UP;
             }else{
-                if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
+                if(map.getTerrain(position.x+1, position.y) != TerrainType.FILLED){
                     destination.x += 1;
                 }
                 else{
@@ -458,7 +461,7 @@ public class AgentBiondo extends Agent{
                 destination.y += 1;
                 lastMovement = Movement.DOWN;
             }else{
-                if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
+                if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
                     destination.x -= 1;
                 }
                 else{
