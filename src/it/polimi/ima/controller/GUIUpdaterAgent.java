@@ -16,6 +16,8 @@ package it.polimi.ima.controller;
 
 
 import it.polimi.ima.model.TileBasedMap;
+import it.polimi.ima.utils.AgentOrientation;
+import it.polimi.ima.utils.Constants;
 import it.polimi.ima.view.View;
 import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
@@ -34,7 +36,7 @@ public class GUIUpdaterAgent extends Agent{
     public void setup() {
         map = (TileBasedMap) getArguments()[0];
         view = (View) getArguments()[1];
-        addBehaviour(new AgentBehavior(this, 1));
+        addBehaviour(new AgentBehavior(this, 125));
     }
 
 
@@ -50,6 +52,15 @@ public class GUIUpdaterAgent extends Agent{
         @Override
         protected void onTick() {
             view.update(map.getTerrainDTO(), map.getAgentDTO());
+            int count = 0;
+            for (int i = 0; i < Constants.HEIGHT; i++) {
+                for (int j = 0; j < Constants.WIDTH; j++) {
+                    if (map.getUnit(j, i) != AgentOrientation.NO_AGENT) {
+                        count++;
+                    }
+                }
+            }
+            System.out.println(count);
         }
 
     }

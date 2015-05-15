@@ -29,9 +29,11 @@ import java.util.Random;
 public class AgentBiondo extends Agent{
 
 
-    // References to the model and the view
+    // References to the model
     private TileBasedMap map;
-
+    // Agent id
+    private int id;
+    // Current state of the agent
     private FSMState currentState;
 
     // Position of the agent
@@ -57,7 +59,7 @@ public class AgentBiondo extends Agent{
         } while (map.blocked(position.x, position.y));
         map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
         System.out.println("posizione: " + position.x + " " + position.y);
-        addBehaviour(new AgentBehavior(this, 1));
+        addBehaviour(new AgentBehavior(this, 125));
     }
 
     /*
@@ -114,6 +116,9 @@ public class AgentBiondo extends Agent{
      */
     private int computeDistances(Point reference) {
         int distance = Integer.MAX_VALUE;
+        if(map.getUnit(reference.x, reference.y) != AgentOrientation.NO_AGENT ){
+            return 0;
+        }
         for (int i = 0; i < Constants.HEIGHT; i++) {
             for (int j = 0; j < Constants.WIDTH; j++) {
                 if (map.getUnit(j, i) != AgentOrientation.NO_AGENT && (reference.x != j || reference.y != i) &&
@@ -419,6 +424,8 @@ public class AgentBiondo extends Agent{
         // riempie la cella con un blocco
         map.fillCell(position.x, position.y);
 
+        System.out.println("Agent " + id + " Attach block to  " + position.x + "," + position.y);
+
         //reimposta lo stato del robot a WANDERING
         currentState = FSMState.WANDERING;
         seenRowStart = false;
@@ -437,6 +444,7 @@ public class AgentBiondo extends Agent{
     private void followPerimeterCounterclockwise(){
 
         Point destination = (Point) position.clone();
+        Movement lastMovementCopy = lastMovement;
 
         if(lastMovement == Movement.UP){
             if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
@@ -498,7 +506,12 @@ public class AgentBiondo extends Agent{
             }
         }
 
-        move(destination);
+        if(computeDistances(destination) >= 2) {
+            move(destination);
+        }
+        else {
+            lastMovement = lastMovementCopy;
+        }
     }
 
 
