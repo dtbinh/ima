@@ -45,7 +45,7 @@ public class IMAMain {
                 id = i+1;
                 System.out.println("Agent: " + id);
                 Object[] args = {map};
-                (cc.createNewAgent("agent" + id, "it.polimi.ima.controller.MyAgent", args)).start();
+                (cc.createNewAgent("agent" + id, "it.polimi.ima.controller.AgentBiondo", args)).start();
             }
             id++;
             System.out.println("GUI Agent: " + id);

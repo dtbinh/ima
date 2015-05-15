@@ -59,6 +59,7 @@ public class View extends JFrame {
             terrainTiles.put(TerrainType.EMPTY, ImageIO.read(getResource("res/empty_cell.png")));
             terrainTiles.put(TerrainType.TO_FILL, ImageIO.read(getResource("res/cell_to_fill.png")));
             terrainTiles.put(TerrainType.FILLED, ImageIO.read(getResource("res/filled_cell.png")));
+            terrainTiles.put(TerrainType.LANDMARK, ImageIO.read(getResource("res/landmark_cell.png")));
             agentTiles.put(AgentOrientation.AGENT_NORTH, ImageIO.read(getResource("res/agent_north.png")));
             agentTiles.put(AgentOrientation.AGENT_SOUTH, ImageIO.read(getResource("res/agent_south.png")));
             agentTiles.put(AgentOrientation.AGENT_WEST, ImageIO.read(getResource("res/agent_west.png")));

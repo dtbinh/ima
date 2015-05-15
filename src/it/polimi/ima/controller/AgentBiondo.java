@@ -53,7 +53,7 @@ public class AgentBiondo extends Agent{
         } while (map.blocked(position.x, position.y));
         map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
         System.out.println("posizione: " + position.x + " " + position.y);
-        addBehaviour(new AgentBehavior(this, 125));
+        addBehaviour(new AgentBehavior(this, 1));
     }
 
     /*

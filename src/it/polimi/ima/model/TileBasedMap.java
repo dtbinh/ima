@@ -15,6 +15,7 @@
 package it.polimi.ima.model;
 
 import it.polimi.ima.utils.AgentOrientation;
+import it.polimi.ima.utils.BuildingMap;
 import it.polimi.ima.utils.Constants;
 import it.polimi.ima.utils.TerrainType;
 
@@ -33,12 +34,31 @@ public class TileBasedMap {
      * Create a new test map with some default configuration
      */
     public TileBasedMap() {
+
+        int map[][] = BuildingMap.buildingMap;
+
+        for(int i=0; i<Constants.HEIGHT; i++){
+            for(int j=0; j<Constants.WIDTH; j++){
+                if(map[i][j] == 1){
+                    terrain[j][i] = TerrainType.TO_FILL;
+                } else if (map[i][j] == 2){
+                    terrain[j][i] = TerrainType.LANDMARK;
+                } else {
+                    terrain[j][i] = TerrainType.EMPTY;
+                }
+
+            }
+
+        }
+
+        /*
         // create some test data
         fillArea(0,0,30,30, TerrainType.EMPTY);
         fillArea(17,5,10,3,TerrainType.TO_FILL);
         fillArea(20,8,5,3,TerrainType.TO_FILL);
         fillArea(8,2,7,3,TerrainType.TO_FILL);
         fillArea(10,5,3,3,TerrainType.TO_FILL);
+        */
 
         for(int i=0; i<Constants.HEIGHT; i++){
             for(int j=0; j<Constants.WIDTH; j++){
@@ -56,6 +76,7 @@ public class TileBasedMap {
      * @param height The height of the area to fill
      * @param terrainType The terrain type to fill with
      */
+    /*
     private void fillArea(int x, int y, int width, int height, TerrainType terrainType) {
         for (int xp=x;xp<x+width;xp++) {
             for (int yp=y;yp<y+height;yp++) {
@@ -63,6 +84,7 @@ public class TileBasedMap {
             }
         }
     }
+    */
 
     /**
      * Get the terrain at a given location
