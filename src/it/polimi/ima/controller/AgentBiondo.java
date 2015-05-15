@@ -235,19 +235,23 @@ public class AgentBiondo extends Agent{
     }
 
     private boolean approachingPerimeter(){
-        if(map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
+        if(position.x+1 < Constants.WIDTH
+            &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
             lastMovement = Movement.UP;
             return true;
         }
-        if(map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
+        if(position.x-1 >= 0
+            &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
             lastMovement = Movement.DOWN;
             return true;
         }
-        if(map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
+        if(position.y+1 < Constants.HEIGHT
+            &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
             lastMovement = Movement.LEFT;
             return true;
         }
-        if(map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
+        if(position.y-1 >= 0
+            &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
             lastMovement = Movement.RIGHT;
             return true;
         }
