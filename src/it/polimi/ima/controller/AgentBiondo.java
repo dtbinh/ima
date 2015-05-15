@@ -391,6 +391,7 @@ public class AgentBiondo extends Agent{
         currentState = FSMState.WANDERING;
 
         //resetta la posizione del robot
+        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
         Random random = new Random();
         do {
             position.x = random.nextInt(map.getWidthInTiles());
