@@ -22,10 +22,10 @@ import java.util.Random;
 /**
  * Enum representing the possible directions in which an agent can move
  */
-public enum Movement {
+public enum AgentAction {
     UP,DOWN,LEFT,RIGHT,STOP;
 
-    private static final List<Movement> VALUES =
+    private static final List<AgentAction> VALUES =
             Collections.unmodifiableList(Arrays.asList(values()));
     private static final int SIZE = VALUES.size();
     private static final Random RANDOM = new Random();
@@ -34,7 +34,7 @@ public enum Movement {
      * Returns a random direction chosen among the members of the enum
      * @return a random direction chosen among the members of the enum
      */
-    public static Movement getRandomMovement()  {
+    public static AgentAction getRandomAction()  {
         return VALUES.get(RANDOM.nextInt(SIZE));
     }
 }

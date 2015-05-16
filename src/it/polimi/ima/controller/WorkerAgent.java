@@ -16,7 +16,6 @@ package it.polimi.ima.controller;
 
 import it.polimi.ima.utils.*;
 import it.polimi.ima.model.TileBasedMap;
-import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
 
 import java.awt.*;
@@ -31,13 +30,15 @@ public class WorkerAgent extends jade.core.Agent {
     // References to the model
     private TileBasedMap map;
     // Current state of the agent
-    private FSMState currentState;
+    private AgentFSMState currentState;
     // Number of iteration without moving
     private int stopCounter;
     // Position of the agent
     private Point position;
+    // Last action of the agent
+    private AgentAction lastAction;
     // Last movement of the agent
-    private Movement lastMovement;
+    private AgentAction lastMovement;
     // Check if the agent has seen a row-start
     private boolean seenRowStart;
 
@@ -46,7 +47,7 @@ public class WorkerAgent extends jade.core.Agent {
      */
     public void setup() {
         // Initializations
-        currentState = FSMState.WANDERING;
+        currentState = AgentFSMState.WANDERING;
         seenRowStart = false;
         stopCounter = 0;
         map = (TileBasedMap) getArguments()[0];
@@ -77,15 +78,15 @@ public class WorkerAgent extends jade.core.Agent {
             case WANDERING:
                 if(approachingPerimeter()){
                     if(atLandmark()){
-                        currentState = FSMState.ALGORITHM1;
+                        currentState = AgentFSMState.ALGORITHM1;
                         constructionAlgorithm();
                     }else{
-                        currentState = FSMState.PERIMETER_FOLLOWING;
+                        currentState = AgentFSMState.PERIMETER_FOLLOWING;
                         followPerimeterCounterclockwise();
                     }
                 }else {
                     if(atLandmark()){
-                        currentState = FSMState.PLACING_FIRST_BLOCK;
+                        currentState = AgentFSMState.PLACING_FIRST_BLOCK;
                         move(goToFirstBlock());
                     }else {
                         move(makeOneStep());
@@ -97,7 +98,7 @@ public class WorkerAgent extends jade.core.Agent {
                 break;
             case PERIMETER_FOLLOWING:
                 if(atLandmark()){
-                    currentState = FSMState.AT_LANDMARK;
+                    currentState = AgentFSMState.AT_LANDMARK;
                     constructionAlgorithm();
                 }else{
                     followPerimeterCounterclockwise();
@@ -105,7 +106,7 @@ public class WorkerAgent extends jade.core.Agent {
                 break;
             case AT_LANDMARK:
                 if(!atLandmark()){
-                    currentState = FSMState.ALGORITHM1;
+                    currentState = AgentFSMState.ALGORITHM1;
                 }
                 constructionAlgorithm();
                 break;
@@ -150,7 +151,7 @@ public class WorkerAgent extends jade.core.Agent {
         System.out.println("Accessing the stargate! =)");
 
         // Set internal state back to WANDERING
-        currentState = FSMState.WANDERING;
+        currentState = AgentFSMState.WANDERING;
         seenRowStart = false;
 
         // Reset robot position
@@ -170,15 +171,15 @@ public class WorkerAgent extends jade.core.Agent {
          */
     private void move(Point destination) {
         // Update of the model
-        if (lastMovement != Movement.STOP) {
+        if (lastAction != AgentAction.STOP) {
             map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
-            if (lastMovement == Movement.UP) {
+            if (lastAction == AgentAction.UP) {
                 map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_NORTH);
-            } else if (lastMovement == Movement.DOWN) {
+            } else if (lastAction == AgentAction.DOWN) {
                 map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_SOUTH);
-            } else if (lastMovement == Movement.LEFT) {
+            } else if (lastAction == AgentAction.LEFT) {
                 map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_WEST);
-            } else if (lastMovement == Movement.RIGHT) {
+            } else if (lastAction == AgentAction.RIGHT) {
                 map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_EAST);
             }
             stopCounter = 0;
@@ -202,8 +203,8 @@ public class WorkerAgent extends jade.core.Agent {
         Point destination;
         do {
             destination = (Point) position.clone();
-            Movement movement = Movement.getRandomMovement();
-            switch (movement) {
+            AgentAction action = AgentAction.getRandomAction();
+            switch (action) {
                 case UP:
                     destination.y -= 1;
                     break;
@@ -218,8 +219,8 @@ public class WorkerAgent extends jade.core.Agent {
                 default:
                     break;
             }
-            lastMovement = movement;
-        } while (isOutOfBoundary(destination) || (lastMovement != Movement.STOP &&
+            lastAction = action;
+        } while (isOutOfBoundary(destination) || (lastAction != AgentAction.STOP &&
                 stopCounter < Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) < 2) ||
                 stopCounter >= Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) < 1);
         return destination;
@@ -267,22 +268,22 @@ public class WorkerAgent extends jade.core.Agent {
 
         if(map.getTerrain(position.x+1, position.y) == TerrainType.TO_FILL) {
             destination.x += 1;
-            lastMovement = Movement.RIGHT;
+            lastAction = AgentAction.RIGHT;
             return destination;
         }
         if(map.getTerrain(position.x-1, position.y) == TerrainType.TO_FILL) {
             destination.x -= 1;
-            lastMovement = Movement.LEFT;
+            lastAction = AgentAction.LEFT;
             return destination;
         }
         if(map.getTerrain(position.x, position.y+1) == TerrainType.TO_FILL) {
             destination.y += 1;
-            lastMovement = Movement.DOWN;
+            lastAction = AgentAction.DOWN;
             return destination;
         }
 
         destination.y -= 1;
-        lastMovement = Movement.UP;
+        lastAction = AgentAction.UP;
         return destination;
 
     }
@@ -290,22 +291,22 @@ public class WorkerAgent extends jade.core.Agent {
     private boolean approachingPerimeter(){
         if(position.x+1 < Constants.WIDTH
             &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
-            lastMovement = Movement.DOWN;
+            lastAction = AgentAction.DOWN;
             return true;
         }
         if(position.x-1 >= 0
             &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
-            lastMovement = Movement.UP;
+            lastAction = AgentAction.UP;
             return true;
         }
         if(position.y+1 < Constants.HEIGHT
             &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
-            lastMovement = Movement.LEFT;
+            lastAction = AgentAction.LEFT;
             return true;
         }
         if(position.y-1 >= 0
             &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
-            lastMovement = Movement.RIGHT;
+            lastAction = AgentAction.RIGHT;
             return true;
         }
         return false;
@@ -361,7 +362,7 @@ public class WorkerAgent extends jade.core.Agent {
      */
        private boolean atEndOfRow(){
 
-           if(lastMovement == Movement.UP){
+           if(lastAction == AgentAction.UP){
                // se il blocco "avanti a sinistra" non è
                // occupato, allora la casella in cui mi trovo
                // è una end-of-row
@@ -375,7 +376,7 @@ public class WorkerAgent extends jade.core.Agent {
                        map.getTerrain(position.x, position.y - 1) == TerrainType.EMPTY;
            }
 
-           if(lastMovement == Movement.DOWN){
+           if(lastAction == AgentAction.DOWN){
                // se il blocco "avanti a sinistra" non è
                // occupato, allora la casella in cui mi trovo
                // è una end-of-row
@@ -389,7 +390,7 @@ public class WorkerAgent extends jade.core.Agent {
                        map.getTerrain(position.x, position.y + 1) == TerrainType.EMPTY;
            }
 
-           if(lastMovement == Movement.RIGHT){
+           if(lastAction == AgentAction.RIGHT){
                // se il blocco "avanti a sinistra" non è
                // occupato, allora la casella in cui mi trovo
                // è una end-of-row
@@ -403,7 +404,7 @@ public class WorkerAgent extends jade.core.Agent {
                        map.getTerrain(position.x + 1, position.y) == TerrainType.EMPTY;
            }
 
-           //se arrivo qui, lastMovement==LEFT
+           //se arrivo qui, lastAction==LEFT
 
            // se il blocco "avanti a sinistra" non è
            // occupato, allora la casella in cui mi trovo
@@ -429,7 +430,7 @@ public class WorkerAgent extends jade.core.Agent {
         map.fillCell(position.x, position.y);
 
         //reimposta lo stato del robot a WANDERING
-        currentState = FSMState.WANDERING;
+        currentState = AgentFSMState.WANDERING;
         seenRowStart = false;
 
         //resetta la posizione del robot
@@ -446,69 +447,69 @@ public class WorkerAgent extends jade.core.Agent {
     private void followPerimeterCounterclockwise(){
 
         Point destination = (Point) position.clone();
-        Movement lastMovementCopy = lastMovement;
+        AgentAction lastActionCopy = lastAction;
 
         if(stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING){
-            currentState = FSMState.WANDERING;
+            currentState = AgentFSMState.WANDERING;
             destination = makeOneStep();
         }
 
-        else if(lastMovement == Movement.UP){
+        else if(lastAction == AgentAction.UP){
             if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
                 destination.x -= 1;
-                lastMovement = Movement.LEFT;
+                lastAction = AgentAction.LEFT;
             }else{
                 if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
                     destination.y -= 1;
                 }
                 else{
                     destination.x += 1;
-                    lastMovement = Movement.RIGHT;
+                    lastAction = AgentAction.RIGHT;
                 }
             }
         }
 
-        else if(lastMovement == Movement.DOWN){
+        else if(lastAction == AgentAction.DOWN){
             if(map.getTerrain(position.x+1, position.y) != TerrainType.FILLED){
                 destination.x += 1;
-                lastMovement = Movement.RIGHT;
+                lastAction = AgentAction.RIGHT;
             }else{
                 if(map.getTerrain(position.x, position.y+1) != TerrainType.FILLED){
                     destination.y += 1;
                 }
                 else{
                     destination.x -= 1;
-                    lastMovement = Movement.LEFT;
+                    lastAction = AgentAction.LEFT;
                 }
             }
         }
 
-        else if(lastMovement == Movement.RIGHT){
+        else if(lastAction == AgentAction.RIGHT){
             if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
                 destination.y -= 1;
-                lastMovement = Movement.UP;
+                lastAction = AgentAction.UP;
             }else{
                 if(map.getTerrain(position.x+1, position.y) != TerrainType.FILLED){
                     destination.x += 1;
                 }
                 else{
                     destination.y += 1;
-                    lastMovement = Movement.DOWN;
+                    lastAction = AgentAction.DOWN;
                 }
             }
         }
 
-        else if(lastMovement == Movement.LEFT){
+        else if(lastAction == AgentAction.LEFT){
             if(map.getTerrain(position.x, position.y+1) != TerrainType.FILLED){
                 destination.y += 1;
-                lastMovement = Movement.DOWN;
+                lastAction = AgentAction.DOWN;
             }else{
                 if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
                     destination.x -= 1;
                 }
                 else{
                     destination.y -= 1;
-                    lastMovement = Movement.UP;
+                    lastAction = AgentAction.UP;
                 }
             }
         }
@@ -518,7 +519,7 @@ public class WorkerAgent extends jade.core.Agent {
             move(destination);
         }
         else {
-            lastMovement = lastMovementCopy;
+            lastAction = lastActionCopy;
         }
     }
 

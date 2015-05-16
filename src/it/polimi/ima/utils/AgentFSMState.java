@@ -17,7 +17,7 @@ package it.polimi.ima.utils;
 /**
  * Enum representing the different internal states an agent can assume
  */
-public enum FSMState {
+public enum AgentFSMState {
     WANDERING,
     PLACING_FIRST_BLOCK,
     PERIMETER_FOLLOWING,
