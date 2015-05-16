@@ -63,7 +63,6 @@ public class WorkerAgent extends jade.core.Agent {
         public AgentBehavior(jade.core.Agent a, long period) {
             super(a, period);
         }
-
         @Override
         protected void onTick() {
             agentFSM();
@@ -128,10 +127,11 @@ public class WorkerAgent extends jade.core.Agent {
      */
     private void constructionAlgorithm(){
 
+        // In case of emergency
         if(isOverFilledTerrain()){
             teleport();
         }
-
+        // Algorithm of the paper
         if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
             attachBlockHere();
         }
