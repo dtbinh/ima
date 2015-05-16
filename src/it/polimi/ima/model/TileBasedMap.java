@@ -51,40 +51,12 @@ public class TileBasedMap {
 
         }
 
-        /*
-        // create some test data
-        fillArea(0,0,30,30, TerrainType.EMPTY);
-        fillArea(17,5,10,3,TerrainType.TO_FILL);
-        fillArea(20,8,5,3,TerrainType.TO_FILL);
-        fillArea(8,2,7,3,TerrainType.TO_FILL);
-        fillArea(10,5,3,3,TerrainType.TO_FILL);
-        */
-
         for(int i=0; i<Constants.HEIGHT; i++){
             for(int j=0; j<Constants.WIDTH; j++){
                 agent[i][j] = AgentOrientation.NO_AGENT;
             }
         }
     }
-
-    /**
-     * Fill an area with a given terrain type
-     *
-     * @param x The x coordinate to start filling at
-     * @param y The y coordinate to start filling at
-     * @param width The width of the area to fill
-     * @param height The height of the area to fill
-     * @param terrainType The terrain type to fill with
-     */
-    /*
-    private void fillArea(int x, int y, int width, int height, TerrainType terrainType) {
-        for (int xp=x;xp<x+width;xp++) {
-            for (int yp=y;yp<y+height;yp++) {
-                terrain[xp][yp] = terrainType;
-            }
-        }
-    }
-    */
 
     /**
      * Get the terrain at a given location

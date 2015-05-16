@@ -26,7 +26,7 @@ import java.util.Random;
  * This class represents a jade agent.  It provides {@link #setup()} and {@link #takeDown()} methods to handle
  * correctly agent lifecycle.
  */
-public class AgentBiondo extends Agent{
+public class WorkerAgent extends jade.core.Agent {
 
     // References to the model
     private TileBasedMap map;
@@ -189,7 +189,7 @@ public class AgentBiondo extends Agent{
                 System.out.println(stopCounter);
             }
         }
-        //System.out.println("Agent " + this.getAID().getLocalName() + " " + this.currentState + " move from " + position.x + "," + position.y + " to " +
+        //System.out.println("WorkerAgent " + this.getAID().getLocalName() + " " + this.currentState + " move from " + position.x + "," + position.y + " to " +
         //destination.x + "," + destination.y);
         position = destination;
     }

@@ -43,12 +43,12 @@ public class IMAMain {
             // create enemy tank agent and start it
             for(int i=0; i<60; i++) {
                 id = i+1;
-                System.out.println("Agent: " + id);
+                System.out.println("WorkerAgent: " + id);
                 Object[] args = {map};
-                (cc.createNewAgent("agent" + id, "it.polimi.ima.controller.AgentBiondo", args)).start();
+                (cc.createNewAgent("agent" + id, "it.polimi.ima.controller.WorkerAgent", args)).start();
             }
             id++;
-            System.out.println("GUI Agent: " + id);
+            System.out.println("GUI WorkerAgent: " + id);
             Object[] args = {map, view};
             (cc.createNewAgent("GUIAgent" + id, "it.polimi.ima.controller.GUIUpdaterAgent", args)).start();
 
