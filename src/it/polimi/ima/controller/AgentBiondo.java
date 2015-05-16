@@ -28,27 +28,33 @@ import java.util.Random;
  */
 public class AgentBiondo extends Agent{
 
-
     // References to the model
     private TileBasedMap map;
     // Current state of the agent
     private FSMState currentState;
+    // Number of iteration without moving
+    private int stopCounter;
 
     // Position of the agent
     private Point position;
 
     // Last movement of the agent
     private Movement lastMovement;
-
+    // Check if the agent has seen a row-start
     private boolean seenRowStart;
 
     /**
      * Framework method to set up the agent
      */
     public void setup() {
+
+        // Initializations
         currentState = FSMState.WANDERING;
         seenRowStart = false;
+        stopCounter = 0;
         map = (TileBasedMap) getArguments()[0];
+
+        // Assign a random position on the map checking that the chosen position is not already occupied
         Random random = new Random();
         position = new Point();
         do {
@@ -56,13 +62,122 @@ public class AgentBiondo extends Agent{
             position.y = random.nextInt(map.getWidthInTiles());
         } while (map.blocked(position.x, position.y));
         map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
-        System.out.println("posizione: " + position.x + " " + position.y);
-        addBehaviour(new AgentBehavior(this, 125));
+
+        // Add the behaviour to the agent
+        addBehaviour(new AgentBehavior(this, 10));
+    }
+
+    /**
+     * This class defines the behaviour of the agent
+     */
+    private class AgentBehavior extends TickerBehaviour {
+        public AgentBehavior(jade.core.Agent a, long period) {
+            super(a, period);
+        }
+
+        @Override
+        protected void onTick() {
+            agentFSM();
+        }
     }
 
     /*
-     * This methods updates the model according to the chosen movement and trigger the repaint of the view
+     * Defines the behaviour of the agent according to its current internal state
      */
+    private void agentFSM(){
+        switch (currentState){
+            case WANDERING:
+                if(approachingPerimeter()){
+                    if(atLandmark()){
+                        currentState = FSMState.ALGORITHM1;
+                        constructionAlgorithm();
+                    }else{
+                        currentState = FSMState.PERIMETER_FOLLOWING;
+                        followPerimeterCounterclockwise();
+                    }
+                }else {
+                    if(atLandmark()){
+                        currentState = FSMState.PLACING_FIRST_BLOCK;
+                        move(goToFirstBlock());
+                    }else {
+                        move(makeOneStep());
+                    }
+                }
+                break;
+            case PLACING_FIRST_BLOCK:
+                attachBlockHere();
+                break;
+            case PERIMETER_FOLLOWING:
+                if(atLandmark()){
+                    currentState = FSMState.ALGORITHM1;
+                    constructionAlgorithm();
+                }else{
+                    followPerimeterCounterclockwise();
+                }
+                break;
+            case ALGORITHM1:
+                if(atLandmark()){
+                    doDelete();
+                }
+                else {
+                    constructionAlgorithm();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Implementation of the construction algorithm defined in the paper
+     */
+    private void constructionAlgorithm(){
+
+        if(isOverFilledTerrain()){
+            teleport();
+        }
+
+        if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
+            attachBlockHere();
+        }
+        else{
+            if(atEndOfRow()){
+                seenRowStart = true;
+            }
+            followPerimeterCounterclockwise();
+        }
+    }
+
+    /*
+     * This method teleport a robot to a random free position in the map
+     */
+    private void teleport(){
+        System.out.println("Accessing the stargate! =)");
+
+        // Set internal state back to WANDERING
+        currentState = FSMState.WANDERING;
+        seenRowStart = false;
+
+        // Reset robot position
+        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+        Random random = new Random();
+        do {
+            position.x = random.nextInt(map.getWidthInTiles());
+            position.y = random.nextInt(map.getWidthInTiles());
+        } while (map.blocked(position.x, position.y));
+        map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
+    }
+
+    @Override
+    public void doDelete() {
+        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+        System.out.println("Goodbye, cruel world. =(");
+        super.doDelete();
+    }
+
+    /*
+         * This methods updates the model according to the chosen movement and trigger the repaint of the view
+         */
     private void move(Point destination) {
         // Update of the model
         if (lastMovement != Movement.STOP) {
@@ -76,7 +191,16 @@ public class AgentBiondo extends Agent{
             } else if (lastMovement == Movement.RIGHT) {
                 map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_EAST);
             }
+            stopCounter = 0;
         }
+        else {
+            stopCounter++;
+            if(stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING - 7) {
+                System.out.println(stopCounter);
+            }
+        }
+        //System.out.println("Agent " + this.getAID().getLocalName() + " " + this.currentState + " move from " + position.x + "," + position.y + " to " +
+        //destination.x + "," + destination.y);
         position = destination;
     }
 
@@ -105,24 +229,26 @@ public class AgentBiondo extends Agent{
                     break;
             }
             lastMovement = movement;
-        } while (isOutOfBoundary(destination) || computeDistances(destination) < 2);
+        } while (isOutOfBoundary(destination) || (lastMovement != Movement.STOP &&
+                stopCounter < Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) < 2) ||
+                stopCounter >= Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) < 1);
         return destination;
     }
 
     /*
      * This method computes the minimum distance between a cell and the surrounding agents
      */
-    private int computeDistances(Point reference) {
+    private int computeDistances(Point destination) {
         int distance = Integer.MAX_VALUE;
-        if(map.getUnit(reference.x, reference.y) != AgentOrientation.NO_AGENT ){
+        if(map.getUnit(destination.x, destination.y) != AgentOrientation.NO_AGENT ){
             return 0;
         }
         for (int i = 0; i < Constants.HEIGHT; i++) {
             for (int j = 0; j < Constants.WIDTH; j++) {
-                if (map.getUnit(j, i) != AgentOrientation.NO_AGENT && (reference.x != j || reference.y != i) &&
+                if (map.getUnit(j, i) != AgentOrientation.NO_AGENT && (destination.x != j || destination.y != i) &&
                         !(i == position.y && j == position.x)) {
-                    if (Math.abs(j - reference.x) + Math.abs(i - reference.y) < distance) {
-                        distance = Math.abs(j - reference.x) + Math.abs(i - reference.y);
+                    if (Math.abs(j - destination.x) + Math.abs(i - destination.y) < distance) {
+                        distance = Math.abs(j - destination.x) + Math.abs(i - destination.y);
                     }
                 }
             }
@@ -137,102 +263,8 @@ public class AgentBiondo extends Agent{
         return p.x >= map.getWidthInTiles() || p.x < 0 || p.y >= map.getHeightInTiles() || p.y < 0;
     }
 
-    /**
-     * this behavior is used to deal with update job for painting
-     */
-    private class AgentBehavior extends TickerBehaviour {
-        public AgentBehavior(jade.core.Agent a, long period) {
-            super(a, period);
-        }
-
-        @Override
-        protected void onTick() {
-            agentFSM();
-        }
-    }
-
-    public void agentFSM(){
-
-        switch (currentState){
-            case WANDERING:
-                if(approachingPerimeter()){
-                    if(atLandmark()){
-                        currentState = FSMState.ALGORITHM1;
-                        algorithm1();
-                    }else{
-                        currentState = FSMState.PERIMETER_FOLLOWING;
-                        followPerimeterCounterclockwise();
-                    }
-                }else {
-                    if(atLandmark()){
-                        currentState = FSMState.PLACING_FIRST_BLOCK;
-                        move(goToFirstBlock());
-                    }else {
-                        move(makeOneStep());
-                    }
-                }
-                break;
-            case PLACING_FIRST_BLOCK:
-                attachBlockHere();
-                break;
-            case PERIMETER_FOLLOWING:
-                if(atLandmark()){
-                    currentState = FSMState.ALGORITHM1;
-                    algorithm1();
-                }else{
-                    followPerimeterCounterclockwise();
-                }
-                break;
-            case ALGORITHM1:
-                algorithm1();
-                break;
-            default:
-                break;
-        }
-    }
-
-    /**
-     Implementazione algoritmo paper
-     */
-    private void algorithm1(){
-
-        if(suicide()){
-
-            System.out.println("Goodbye, cruel world. =(");
-
-            //reimposta lo stato del robot a WANDERING
-            currentState = FSMState.WANDERING;
-            seenRowStart = false;
-
-            //resetta la posizione del robot
-            map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
-            Random random = new Random();
-            do {
-                position.x = random.nextInt(map.getWidthInTiles());
-                position.y = random.nextInt(map.getWidthInTiles());
-            } while (map.blocked(position.x, position.y));
-            map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
-            return;
-        }
-
-
-        if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
-            attachBlockHere();
-        }
-        else{
-            if(atEndOfRow()){
-                seenRowStart = true;
-            }
-            followPerimeterCounterclockwise();
-        }
-
-    }
-
-    private boolean suicide() {
-        if (map.getTerrain(position.x, position.y) == TerrainType.FILLED) {
-            return true;
-        }
-        return false;
+    private boolean isOverFilledTerrain() {
+        return map.getTerrain(position.x, position.y) == TerrainType.FILLED;
     }
 
     /*
@@ -269,40 +301,32 @@ public class AgentBiondo extends Agent{
         if(position.x+1 < Constants.WIDTH
             &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
             lastMovement = Movement.DOWN;
-            //System.out.println("trovato blocco, giro giu");
             return true;
         }
         if(position.x-1 >= 0
             &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
             lastMovement = Movement.UP;
-            //System.out.println("trovato blocco, giro su");
             return true;
         }
         if(position.y+1 < Constants.HEIGHT
             &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
             lastMovement = Movement.LEFT;
-            //System.out.println("trovato blocco, giro a sinistra");
             return true;
         }
         if(position.y-1 >= 0
             &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
             lastMovement = Movement.RIGHT;
-            //System.out.println("trovato blocco, giro a destra");
             return true;
         }
         return false;
     }
 
     private boolean atLandmark(){
-        if(map.getTerrain(position.x, position.y) == TerrainType.LANDMARK)
-            return true;
-        return false;
+        return map.getTerrain(position.x, position.y) == TerrainType.LANDMARK;
     }
 
     private boolean siteShouldHaveABlock(){
-        if(map.getTerrain(position.x, position.y) == TerrainType.TO_FILL)
-            return true;
-        return false;
+        return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL;
     }
 
     /**
@@ -356,11 +380,9 @@ public class AgentBiondo extends Agent{
                // se mi trovo in un quadrato di terreno da riempire
                // e il quadrato antistante va lasciato vuoto, allora
                // sono ad un' end-of-row
-               if (map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+               return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
                        &&
-                       map.getTerrain(position.x, position.y-1) == TerrainType.EMPTY)
-                   return true;
-               return false;
+                       map.getTerrain(position.x, position.y - 1) == TerrainType.EMPTY;
            }
 
            if(lastMovement == Movement.DOWN){
@@ -372,11 +394,9 @@ public class AgentBiondo extends Agent{
                // se mi trovo in un quadrato di terreno da riempire
                // e il quadrato antistante va lasciato vuoto, allora
                // sono ad un' end-of-row
-               if (map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+               return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
                        &&
-                       map.getTerrain(position.x, position.y+1) == TerrainType.EMPTY)
-                   return true;
-               return false;
+                       map.getTerrain(position.x, position.y + 1) == TerrainType.EMPTY;
            }
 
            if(lastMovement == Movement.RIGHT){
@@ -388,11 +408,9 @@ public class AgentBiondo extends Agent{
                // se mi trovo in un quadrato di terreno da riempire
                // e il quadrato antistante va lasciato vuoto, allora
                // sono ad un' end-of-row
-               if (map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+               return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
                        &&
-                       map.getTerrain(position.x+1, position.y) == TerrainType.EMPTY)
-                   return true;
-               return false;
+                       map.getTerrain(position.x + 1, position.y) == TerrainType.EMPTY;
            }
 
            //se arrivo qui, lastMovement==LEFT
@@ -405,13 +423,11 @@ public class AgentBiondo extends Agent{
            // se mi trovo in un quadrato di terreno da riempire
            // e il quadrato antistante va lasciato vuoto, allora
            // sono ad un' end-of-row
-           if (map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+           return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
                    &&
-                   map.getTerrain(position.x-1, position.y) == TerrainType.EMPTY)
-               return true;
-           return false;
+                   map.getTerrain(position.x - 1, position.y) == TerrainType.EMPTY;
 
-    }
+       }
 
     /** Segnala sulla mappa la presenza del blocco,
      *  imposta lo stato dell'agente a WANDERNING e
@@ -442,7 +458,12 @@ public class AgentBiondo extends Agent{
         Point destination = (Point) position.clone();
         Movement lastMovementCopy = lastMovement;
 
-        if(lastMovement == Movement.UP){
+        if(stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING){
+            currentState = FSMState.WANDERING;
+            destination = makeOneStep();
+        }
+
+        else if(lastMovement == Movement.UP){
             if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
                 destination.x -= 1;
                 lastMovement = Movement.LEFT;
@@ -502,7 +523,8 @@ public class AgentBiondo extends Agent{
             }
         }
 
-        if(computeDistances(destination) >= 2) {
+        if(computeDistances(destination) >= 2 ||
+                (stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) >= 1)) {
             move(destination);
         }
         else {

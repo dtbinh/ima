@@ -52,15 +52,6 @@ public class GUIUpdaterAgent extends Agent{
         @Override
         protected void onTick() {
             view.update(map.getTerrainDTO(), map.getAgentDTO());
-            int count = 0;
-            for (int i = 0; i < Constants.HEIGHT; i++) {
-                for (int j = 0; j < Constants.WIDTH; j++) {
-                    if (map.getUnit(j, i) != AgentOrientation.NO_AGENT) {
-                        count++;
-                    }
-                }
-            }
-            System.out.println(count);
         }
 
     }

@@ -28,7 +28,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
+import javax.swing.*;
 
 /**
  * The following class is in charge of rendering the state of the model upon request
@@ -72,6 +72,7 @@ public class View extends JFrame {
         setSize(700,700);
         setResizable(false);
         setVisible(true);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
     /**
