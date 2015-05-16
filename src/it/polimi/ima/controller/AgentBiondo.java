@@ -34,10 +34,8 @@ public class AgentBiondo extends Agent{
     private FSMState currentState;
     // Number of iteration without moving
     private int stopCounter;
-
     // Position of the agent
     private Point position;
-
     // Last movement of the agent
     private Movement lastMovement;
     // Check if the agent has seen a row-start
@@ -47,21 +45,12 @@ public class AgentBiondo extends Agent{
      * Framework method to set up the agent
      */
     public void setup() {
-
         // Initializations
         currentState = FSMState.WANDERING;
         seenRowStart = false;
         stopCounter = 0;
         map = (TileBasedMap) getArguments()[0];
-
-        // Assign a random position on the map checking that the chosen position is not already occupied
-        Random random = new Random();
-        position = new Point();
-        do {
-            position.x = random.nextInt(map.getWidthInTiles());
-            position.y = random.nextInt(map.getWidthInTiles());
-        } while (map.blocked(position.x, position.y));
-        map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
+        position = pickRandomPosition();
 
         // Add the behaviour to the agent
         addBehaviour(new AgentBehavior(this, 10));
@@ -109,11 +98,17 @@ public class AgentBiondo extends Agent{
                 break;
             case PERIMETER_FOLLOWING:
                 if(atLandmark()){
-                    currentState = FSMState.ALGORITHM1;
+                    currentState = FSMState.AT_LANDMARK;
                     constructionAlgorithm();
                 }else{
                     followPerimeterCounterclockwise();
                 }
+                break;
+            case AT_LANDMARK:
+                if(!atLandmark()){
+                    currentState = FSMState.ALGORITHM1;
+                }
+                constructionAlgorithm();
                 break;
             case ALGORITHM1:
                 if(atLandmark()){
@@ -160,12 +155,7 @@ public class AgentBiondo extends Agent{
 
         // Reset robot position
         map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
-        Random random = new Random();
-        do {
-            position.x = random.nextInt(map.getWidthInTiles());
-            position.y = random.nextInt(map.getWidthInTiles());
-        } while (map.blocked(position.x, position.y));
-        map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
+        position = pickRandomPosition();
     }
 
     @Override
@@ -532,5 +522,18 @@ public class AgentBiondo extends Agent{
         }
     }
 
+    /*
+     * Assign a random position on the map checking that the chosen position is not already occupied
+     */
+    private Point pickRandomPosition(){
+        Random random = new Random();
+        Point position = new Point();
+        do {
+            position.x = random.nextInt(map.getWidthInTiles());
+            position.y = random.nextInt(map.getWidthInTiles());
+        } while (map.blocked(position.x, position.y));
+        map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
+        return position;
+    }
 
 }
