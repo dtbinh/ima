@@ -127,7 +127,7 @@ public class WorkerAgent extends jade.core.Agent {
         }
     }
 
-    /**
+    /*
      * This methods updates the model according to the chosen movement and trigger the repaint of the view
      */
     private void move(AgentAction action) {
@@ -208,6 +208,10 @@ public class WorkerAgent extends jade.core.Agent {
         return distance;
     }
 
+    /*
+     * Returns true il the agent is approaching the perimeter of the construction
+     * Modifies the orientation of the agent in order to align it in parallel to the perimeter of the construction
+     */
     private boolean approachingPerimeter(){
         if(position.x+1 < Constants.WIDTH
                 &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
@@ -232,10 +236,16 @@ public class WorkerAgent extends jade.core.Agent {
         return false;
     }
 
+    /*
+     * Returns true if the agent is over the landmark
+     */
     private boolean atLandmark(){
         return map.getTerrain(position.x, position.y) == TerrainType.LANDMARK;
     }
 
+    /*
+     * Returns true if the agent is over a site that should have a block
+     */
     private boolean siteShouldHaveABlock(){
         return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL;
     }
@@ -280,6 +290,9 @@ public class WorkerAgent extends jade.core.Agent {
         return position;
     }
 
+    /*
+     * This method returns the action that should be performed in order to follow the perimeter
+     */
     private AgentAction getActionAlongPerimeter(){
         if(movementMemory == AgentAction.UP){
             if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED) {
@@ -320,13 +333,12 @@ public class WorkerAgent extends jade.core.Agent {
     }
 
     /*
-     * Metodo chiamato quando troov il landmark senza alcun blocco a fianco.
-     * Mi sposto verso il buco da riempire. (Per regola, a fianco di un
-     * landmark vi può essere una sola cella di tipo TO_FILL)
+     * This method is called when the agent is over the landmark and there has nothing to side
+     * Returns the action that has to be performed by the agent to move over the first cell of the construction
+     *
+     * Remember that, by design, there should be only one TO_FILL cell next to the landmark
      */
     private AgentAction goToFirstBlock() {
-        Point destination = (Point)position.clone();
-
         if(map.getTerrain(position.x+1, position.y) == TerrainType.TO_FILL) {
             return AgentAction.RIGHT;
         }
@@ -339,93 +351,55 @@ public class WorkerAgent extends jade.core.Agent {
         return AgentAction.UP;
     }
 
-    /* Segnala sulla mappa la presenza del blocco,
-     *  imposta lo stato dell'agente a WANDERNING e
-     *  sposta l'agente a ridosso di uno dei bordi della mappa,
-     *  come se  fosse tornato sulla scena con un nuovo blocco
+    /*
+     * Updates the model and the agent inserting a block at the current position
      */
     private void attachBlockHere(){
-        // riempie la cella con un blocco
+        // Place the block
         map.fillCell(position.x, position.y);
 
-        //reimposta lo stato del robot a WANDERING
+        // Reset the agent
         currentState = AgentFSMState.WANDERING;
         seenRowStart = false;
-
-        //resetta la posizione del robot
         map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
         position = pickRandomPosition();
     }
 
     /*
-     * An end-of-row site is defined as an empty site
-     * at which either a robot is about to turn a corner
-     * to the left, or the occupancy matrix specifies
-     * that the site directly ahead is to be left empty.
+     * Returns true if the agent is in a end-of-row site
+     *
+     * An end-of-row site is defined as an empty site at which either a robot is about to turn a corner
+     * to the left, or the occupancy matrix specifies that the site directly ahead is to be left empty.
      */
-    private boolean atEndOfRow(){
+    private boolean atEndOfRow() {
 
-        if(movementMemory == AgentAction.UP){
-            // se il blocco "avanti a sinistra" non è
-            // occupato, allora la casella in cui mi trovo
-            // è una end-of-row
-            if (map.getTerrain(position.x - 1, position.y-1) != TerrainType.FILLED)
-                return true;
-            // se mi trovo in un quadrato di terreno da riempire
-            // e il quadrato antistante va lasciato vuoto, allora
-            // sono ad un' end-of-row
-            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                    &&
-                    map.getTerrain(position.x, position.y - 1) == TerrainType.EMPTY;
+        if (movementMemory == AgentAction.UP) {
+            return map.getTerrain(position.x - 1, position.y - 1) != TerrainType.FILLED ||
+                    map.getTerrain(position.x, position.y) == TerrainType.TO_FILL &&
+                            map.getTerrain(position.x, position.y - 1) == TerrainType.EMPTY;
         }
 
-        if(movementMemory == AgentAction.DOWN){
-            // se il blocco "avanti a sinistra" non è
-            // occupato, allora la casella in cui mi trovo
-            // è una end-of-row
-            if (map.getTerrain(position.x + 1, position.y+1) != TerrainType.FILLED)
-                return true;
-            // se mi trovo in un quadrato di terreno da riempire
-            // e il quadrato antistante va lasciato vuoto, allora
-            // sono ad un' end-of-row
-            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                    &&
-                    map.getTerrain(position.x, position.y + 1) == TerrainType.EMPTY;
+        if (movementMemory == AgentAction.DOWN) {
+            return map.getTerrain(position.x + 1, position.y + 1) != TerrainType.FILLED ||
+                    map.getTerrain(position.x, position.y) == TerrainType.TO_FILL &&
+                            map.getTerrain(position.x, position.y + 1) == TerrainType.EMPTY;
         }
 
-        if(movementMemory == AgentAction.RIGHT){
-            // se il blocco "avanti a sinistra" non è
-            // occupato, allora la casella in cui mi trovo
-            // è una end-of-row
-            if (map.getTerrain(position.x + 1, position.y-1) != TerrainType.FILLED)
-                return true;
-            // se mi trovo in un quadrato di terreno da riempire
-            // e il quadrato antistante va lasciato vuoto, allora
-            // sono ad un' end-of-row
-            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                    &&
-                    map.getTerrain(position.x + 1, position.y) == TerrainType.EMPTY;
+        if (movementMemory == AgentAction.RIGHT) {
+            return map.getTerrain(position.x + 1, position.y - 1) != TerrainType.FILLED ||
+                    map.getTerrain(position.x, position.y) == TerrainType.TO_FILL &&
+                            map.getTerrain(position.x + 1, position.y) == TerrainType.EMPTY;
         }
 
-        //se arrivo qui, lastAction==LEFT
-
-        // se il blocco "avanti a sinistra" non è
-        // occupato, allora la casella in cui mi trovo
-        // è una end-of-row
-        if (map.getTerrain(position.x - 1, position.y+1) != TerrainType.FILLED)
-            return true;
-        // se mi trovo in un quadrato di terreno da riempire
-        // e il quadrato antistante va lasciato vuoto, allora
-        // sono ad un' end-of-row
-        return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                &&
-                map.getTerrain(position.x - 1, position.y) == TerrainType.EMPTY;
-
+        return map.getTerrain(position.x - 1, position.y + 1) != TerrainType.FILLED ||
+                map.getTerrain(position.x, position.y) == TerrainType.TO_FILL &&
+                        map.getTerrain(position.x - 1, position.y) == TerrainType.EMPTY;
     }
 
     /*
-     * An inside corner is defined as an empty site with
-     * blocks at two adjacent sites
+     * Returns true if the agent is in a end-of-row site
+     *
+     * An inside corner is defined as an empty site with blocks at two adjacent sites
      */
     private boolean atInsideCorner() {
         int count = 0;
@@ -452,10 +426,16 @@ public class WorkerAgent extends jade.core.Agent {
         return count >= 2;
     }
 
+    /*
+     * Returns true if the agent is over a filled cell
+     */
     private boolean isOverFilledTerrain() {
         return map.getTerrain(position.x, position.y) == TerrainType.FILLED;
     }
 
+    /**
+     * Override of the parent class deletion method
+     */
     @Override
     public void doDelete() {
         map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
