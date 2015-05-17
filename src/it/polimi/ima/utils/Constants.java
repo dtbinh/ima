@@ -23,5 +23,5 @@ public interface Constants {
     /** The map height in tiles */
     int HEIGHT = 30;
     /** Maximum number of iterations without moving */
-    int MAX_ITERATIONS_WITHOUT_MOVING = 100;
+    int MAX_ITERATIONS_WITHOUT_MOVING = 30;
 }

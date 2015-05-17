@@ -31,30 +31,29 @@ public class WorkerAgent extends jade.core.Agent {
     private TileBasedMap map;
     // Current state of the agent
     private AgentFSMState currentState;
-    // Number of iteration without moving
-    private int stopCounter;
     // Position of the agent
     private Point position;
-    // Last action of the agent
-    private AgentAction lastAction;
     // Last movement of the agent
-    private AgentAction lastMovement;
+    private AgentAction movementMemory;
+    // Number of cycles without moving
+    private int stopCounter;
     // Check if the agent has seen a row-start
     private boolean seenRowStart;
+
 
     /**
      * Framework method to set up the agent
      */
     public void setup() {
         // Initializations
+        map = (TileBasedMap) getArguments()[0];
         currentState = AgentFSMState.WANDERING;
         seenRowStart = false;
         stopCounter = 0;
-        map = (TileBasedMap) getArguments()[0];
         position = pickRandomPosition();
 
         // Add the behaviour to the agent
-        addBehaviour(new AgentBehavior(this, 10));
+        addBehaviour(new AgentBehavior(this, 125));
     }
 
     /**
@@ -78,30 +77,35 @@ public class WorkerAgent extends jade.core.Agent {
             case WANDERING:
                 if(approachingPerimeter()){
                     if(atLandmark()){
-                        currentState = AgentFSMState.ALGORITHM1;
+                        currentState = AgentFSMState.AT_LANDMARK;
                         constructionAlgorithm();
                     }else{
                         currentState = AgentFSMState.PERIMETER_FOLLOWING;
-                        followPerimeterCounterclockwise();
+                        move(getActionAlongPerimeter());
                     }
                 }else {
                     if(atLandmark()){
                         currentState = AgentFSMState.PLACING_FIRST_BLOCK;
                         move(goToFirstBlock());
                     }else {
-                        move(makeOneStep());
+                        move(AgentAction.getRandomAction());
                     }
                 }
                 break;
             case PLACING_FIRST_BLOCK:
-                attachBlockHere();
+                if(!atLandmark()) {
+                    attachBlockHere();
+                }
+                else {
+                    move(goToFirstBlock());
+                }
                 break;
             case PERIMETER_FOLLOWING:
                 if(atLandmark()){
                     currentState = AgentFSMState.AT_LANDMARK;
                     constructionAlgorithm();
                 }else{
-                    followPerimeterCounterclockwise();
+                    move(getActionAlongPerimeter());
                 }
                 break;
             case AT_LANDMARK:
@@ -124,106 +128,63 @@ public class WorkerAgent extends jade.core.Agent {
     }
 
     /**
-     * Implementation of the construction algorithm defined in the paper
+     * This methods updates the model according to the chosen movement and trigger the repaint of the view
      */
-    private void constructionAlgorithm(){
-
-        // In case of emergency
-        if(isOverFilledTerrain()){
-            teleport();
-        }
-        // Algorithm of the paper
-        if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
-            attachBlockHere();
-        }
-        else{
-            if(atEndOfRow()){
-                seenRowStart = true;
+    private void move(AgentAction action) {
+        if(action != AgentAction.STOP){
+            // Compute destination
+            Point destination = (Point) position.clone();
+            if(action == AgentAction.UP){
+                destination.y--;
             }
-            followPerimeterCounterclockwise();
-        }
-    }
-
-    /*
-     * This method teleport a robot to a random free position in the map
-     */
-    private void teleport(){
-        System.out.println("Accessing the stargate! =)");
-
-        // Set internal state back to WANDERING
-        currentState = AgentFSMState.WANDERING;
-        seenRowStart = false;
-
-        // Reset robot position
-        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
-        position = pickRandomPosition();
-    }
-
-    @Override
-    public void doDelete() {
-        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
-        System.out.println("Goodbye, cruel world. =(");
-        super.doDelete();
-    }
-
-    /*
-         * This methods updates the model according to the chosen movement and trigger the repaint of the view
-         */
-    private void move(Point destination) {
-        // Update of the model
-        if (lastAction != AgentAction.STOP) {
-            map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
-            if (lastAction == AgentAction.UP) {
-                map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_NORTH);
-            } else if (lastAction == AgentAction.DOWN) {
-                map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_SOUTH);
-            } else if (lastAction == AgentAction.LEFT) {
-                map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_WEST);
-            } else if (lastAction == AgentAction.RIGHT) {
-                map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_EAST);
+            else if (action == AgentAction.DOWN){
+                destination.y++;
             }
-            stopCounter = 0;
+            else if (action == AgentAction.RIGHT){
+                destination.x++;
+            }
+            else if(action == AgentAction.LEFT){
+                destination.x--;
+            }
+            if(!isOutOfBoundary(destination) && computeDistances(destination) >= 2){
+                // Update the model
+                map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+                if (action == AgentAction.UP) {
+                    map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_NORTH);
+                } else if (action == AgentAction.DOWN) {
+                    map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_SOUTH);
+                } else if (action == AgentAction.LEFT) {
+                    map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_WEST);
+                } else if (action == AgentAction.RIGHT) {
+                    map.setUnit(destination.x, destination.y, AgentOrientation.AGENT_EAST);
+                }
+                // Reset the number of cycles without moving
+                stopCounter = 0;
+                // Update movement memory
+                movementMemory = action;
+                // Update the agent position
+                position = destination;
+            }
+            else {
+                stopCounter++;
+                if(stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING){
+                    doDelete();
+                }
+            }
         }
         else {
             stopCounter++;
-            if(stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING - 7) {
-                System.out.println(stopCounter);
+            if(stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING){
+                doDelete();
             }
         }
-        //System.out.println("WorkerAgent " + this.getAID().getLocalName() + " " + this.currentState + " move from " + position.x + "," + position.y + " to " +
-        //destination.x + "," + destination.y);
-        position = destination;
     }
 
     /*
-     * This methods choose a movement taking care to both avoid collisions with other agent and avoid going out of
-     * the map boundaries
+     * This method check if a given point is outside the boundaries of the map
      */
-    private Point makeOneStep() {
-        Point destination;
-        do {
-            destination = (Point) position.clone();
-            AgentAction action = AgentAction.getRandomAction();
-            switch (action) {
-                case UP:
-                    destination.y -= 1;
-                    break;
-                case DOWN:
-                    destination.y += 1;
-                    break;
-                case LEFT:
-                    destination.x -= 1;
-                    break;
-                case RIGHT:
-                    destination.x += 1;
-                default:
-                    break;
-            }
-            lastAction = action;
-        } while (isOutOfBoundary(destination) || (lastAction != AgentAction.STOP &&
-                stopCounter < Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) < 2) ||
-                stopCounter >= Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) < 1);
-        return destination;
+    private Boolean isOutOfBoundary(Point p) {
+        return p.x >= map.getWidthInTiles() || p.x < 0 || p.y >= map.getHeightInTiles() || p.y < 0;
     }
 
     /*
@@ -247,66 +208,25 @@ public class WorkerAgent extends jade.core.Agent {
         return distance;
     }
 
-    /*
-     * This method check if a given point is outside the boundaries of the map
-     */
-    private Boolean isOutOfBoundary(Point p) {
-        return p.x >= map.getWidthInTiles() || p.x < 0 || p.y >= map.getHeightInTiles() || p.y < 0;
-    }
-
-    private boolean isOverFilledTerrain() {
-        return map.getTerrain(position.x, position.y) == TerrainType.FILLED;
-    }
-
-    /*
-     * Metodo chiamato quando troov il landmark senza alcun blocco a fianco.
-     * Mi sposto verso il buco da riempire. (Per regola, a fianco di un
-     * landmark vi può essere una sola cella di tipo TO_FILL)
-     */
-    private Point goToFirstBlock() {
-        Point destination = (Point)position.clone();
-
-        if(map.getTerrain(position.x+1, position.y) == TerrainType.TO_FILL) {
-            destination.x += 1;
-            lastAction = AgentAction.RIGHT;
-            return destination;
-        }
-        if(map.getTerrain(position.x-1, position.y) == TerrainType.TO_FILL) {
-            destination.x -= 1;
-            lastAction = AgentAction.LEFT;
-            return destination;
-        }
-        if(map.getTerrain(position.x, position.y+1) == TerrainType.TO_FILL) {
-            destination.y += 1;
-            lastAction = AgentAction.DOWN;
-            return destination;
-        }
-
-        destination.y -= 1;
-        lastAction = AgentAction.UP;
-        return destination;
-
-    }
-
     private boolean approachingPerimeter(){
         if(position.x+1 < Constants.WIDTH
-            &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
-            lastAction = AgentAction.DOWN;
+                &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
+            movementMemory = AgentAction.DOWN;
             return true;
         }
         if(position.x-1 >= 0
-            &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
-            lastAction = AgentAction.UP;
+                &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
+            movementMemory = AgentAction.UP;
             return true;
         }
         if(position.y+1 < Constants.HEIGHT
-            &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
-            lastAction = AgentAction.LEFT;
+                &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
+            movementMemory = AgentAction.LEFT;
             return true;
         }
         if(position.y-1 >= 0
-            &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
-            lastAction = AgentAction.RIGHT;
+                &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
+            movementMemory = AgentAction.RIGHT;
             return true;
         }
         return false;
@@ -320,10 +240,381 @@ public class WorkerAgent extends jade.core.Agent {
         return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL;
     }
 
-    /**
+    /*
+     * Implementation of the construction algorithm defined in the paper
+     */
+    private void constructionAlgorithm(){
+        // In case of emergency
+        if(isOverFilledTerrain()){
+            System.out.println("Fuck, I was buried alive! Activate teleportation! =)");
+            // Set internal state back to WANDERING
+            currentState = AgentFSMState.WANDERING;
+            seenRowStart = false;
+            // Reset robot position
+            map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+            position = pickRandomPosition();
+        }
+        // Algorithm of the paper
+        if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
+            attachBlockHere();
+        }
+        else{
+            if(atEndOfRow()){
+                seenRowStart = true;
+            }
+            move(getActionAlongPerimeter());
+        }
+    }
+
+    /*
+     * Assign a random position on the map checking that the chosen position is not already occupied
+     */
+    private Point pickRandomPosition(){
+        Random random = new Random();
+        Point position = new Point();
+        do {
+            position.x = random.nextInt(map.getWidthInTiles());
+            position.y = random.nextInt(map.getWidthInTiles());
+        } while (map.blocked(position.x, position.y));
+        map.setUnit(position.x, position.y, AgentOrientation.AGENT_NORTH);
+        return position;
+    }
+
+    private AgentAction getActionAlongPerimeter(){
+        if(movementMemory == AgentAction.UP){
+            if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED) {
+                return AgentAction.LEFT;
+            }
+            if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
+                return AgentAction.UP;
+            }
+            return AgentAction.RIGHT;
+        }
+        if(movementMemory == AgentAction.DOWN){
+            if(map.getTerrain(position.x+1, position.y) != TerrainType.FILLED){
+                return AgentAction.RIGHT;
+            }
+            if(map.getTerrain(position.x, position.y+1) != TerrainType.FILLED){
+                return AgentAction.DOWN;
+            }
+            return AgentAction.LEFT;
+        }
+        if(movementMemory == AgentAction.RIGHT){
+            if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
+                return AgentAction.UP;
+            }
+            if(map.getTerrain(position.x+1, position.y) != TerrainType.FILLED){
+                return AgentAction.RIGHT;
+            }
+            return AgentAction.DOWN;
+        }
+        else {
+            if(map.getTerrain(position.x, position.y+1) != TerrainType.FILLED){
+               return AgentAction.DOWN;
+            }
+            if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
+                return AgentAction.LEFT;
+            }
+            return AgentAction.UP;
+        }
+    }
+
+    /*
+     * Metodo chiamato quando troov il landmark senza alcun blocco a fianco.
+     * Mi sposto verso il buco da riempire. (Per regola, a fianco di un
+     * landmark vi può essere una sola cella di tipo TO_FILL)
+     */
+    private AgentAction goToFirstBlock() {
+        Point destination = (Point)position.clone();
+
+        if(map.getTerrain(position.x+1, position.y) == TerrainType.TO_FILL) {
+            return AgentAction.RIGHT;
+        }
+        if(map.getTerrain(position.x-1, position.y) == TerrainType.TO_FILL) {
+            return AgentAction.LEFT;
+        }
+        if(map.getTerrain(position.x, position.y+1) == TerrainType.TO_FILL) {
+            return AgentAction.DOWN;
+        }
+        return AgentAction.UP;
+    }
+
+    /* Segnala sulla mappa la presenza del blocco,
+     *  imposta lo stato dell'agente a WANDERNING e
+     *  sposta l'agente a ridosso di uno dei bordi della mappa,
+     *  come se  fosse tornato sulla scena con un nuovo blocco
+     */
+    private void attachBlockHere(){
+        // riempie la cella con un blocco
+        map.fillCell(position.x, position.y);
+
+        //reimposta lo stato del robot a WANDERING
+        currentState = AgentFSMState.WANDERING;
+        seenRowStart = false;
+
+        //resetta la posizione del robot
+        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+        position = pickRandomPosition();
+    }
+
+    /*
+     * An end-of-row site is defined as an empty site
+     * at which either a robot is about to turn a corner
+     * to the left, or the occupancy matrix specifies
+     * that the site directly ahead is to be left empty.
+     */
+    private boolean atEndOfRow(){
+
+        if(movementMemory == AgentAction.UP){
+            // se il blocco "avanti a sinistra" non è
+            // occupato, allora la casella in cui mi trovo
+            // è una end-of-row
+            if (map.getTerrain(position.x - 1, position.y-1) != TerrainType.FILLED)
+                return true;
+            // se mi trovo in un quadrato di terreno da riempire
+            // e il quadrato antistante va lasciato vuoto, allora
+            // sono ad un' end-of-row
+            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                    &&
+                    map.getTerrain(position.x, position.y - 1) == TerrainType.EMPTY;
+        }
+
+        if(movementMemory == AgentAction.DOWN){
+            // se il blocco "avanti a sinistra" non è
+            // occupato, allora la casella in cui mi trovo
+            // è una end-of-row
+            if (map.getTerrain(position.x + 1, position.y+1) != TerrainType.FILLED)
+                return true;
+            // se mi trovo in un quadrato di terreno da riempire
+            // e il quadrato antistante va lasciato vuoto, allora
+            // sono ad un' end-of-row
+            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                    &&
+                    map.getTerrain(position.x, position.y + 1) == TerrainType.EMPTY;
+        }
+
+        if(movementMemory == AgentAction.RIGHT){
+            // se il blocco "avanti a sinistra" non è
+            // occupato, allora la casella in cui mi trovo
+            // è una end-of-row
+            if (map.getTerrain(position.x + 1, position.y-1) != TerrainType.FILLED)
+                return true;
+            // se mi trovo in un quadrato di terreno da riempire
+            // e il quadrato antistante va lasciato vuoto, allora
+            // sono ad un' end-of-row
+            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                    &&
+                    map.getTerrain(position.x + 1, position.y) == TerrainType.EMPTY;
+        }
+
+        //se arrivo qui, lastAction==LEFT
+
+        // se il blocco "avanti a sinistra" non è
+        // occupato, allora la casella in cui mi trovo
+        // è una end-of-row
+        if (map.getTerrain(position.x - 1, position.y+1) != TerrainType.FILLED)
+            return true;
+        // se mi trovo in un quadrato di terreno da riempire
+        // e il quadrato antistante va lasciato vuoto, allora
+        // sono ad un' end-of-row
+        return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                &&
+                map.getTerrain(position.x - 1, position.y) == TerrainType.EMPTY;
+
+    }
+
+    /*
      * An inside corner is defined as an empty site with
      * blocks at two adjacent sites
      */
+    private boolean atInsideCorner() {
+        int count = 0;
+        if (position.x+1 < map.getWidthInTiles()){
+            if (map.getTerrain(position.x + 1, position.y) == TerrainType.FILLED) {
+                count++;
+            }
+        }
+        if (position.x-1 >= 0){
+            if (map.getTerrain(position.x - 1, position.y) == TerrainType.FILLED) {
+                count++;
+            }
+        }
+        if (position.y+1 < map.getHeightInTiles()){
+            if (map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
+                count++;
+            }
+        }
+        if (position.y-1 >= 0){
+            if (map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
+                count++;
+            }
+        }
+        return count >= 2;
+    }
+
+    private boolean isOverFilledTerrain() {
+        return map.getTerrain(position.x, position.y) == TerrainType.FILLED;
+    }
+
+    @Override
+    public void doDelete() {
+        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+        System.out.println("Agent " + getAID().getLocalName() + ": Goodbye, cruel world. =(");
+        super.doDelete();
+    }
+}
+
+/*
+
+    /*
+     * Implementation of the construction algorithm defined in the paper
+     *
+    private void constructionAlgorithm(){
+
+        // In case of emergency
+        if(isOverFilledTerrain()){
+            teleport();
+        }
+        // Algorithm of the paper
+        if(siteShouldHaveABlock() && (atInsideCorner() || (seenRowStart && atEndOfRow()))){
+            attachBlockHere();
+        }
+        else{
+            if(atEndOfRow()){
+                seenRowStart = true;
+            }
+            followPerimeterCounterclockwise();
+        }
+    }
+
+    /*
+     * This method teleport a robot to a random free position in the map
+     *
+    private void teleport(){
+        System.out.println("Accessing the stargate! =)");
+
+        // Set internal state back to WANDERING
+        currentState = AgentFSMState.WANDERING;
+        seenRowStart = false;
+
+        // Reset robot position
+        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+        position = pickRandomPosition();
+    }
+
+    @Override
+    public void doDelete() {
+        map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
+        System.out.println("Goodbye, cruel world. =(");
+        super.doDelete();
+    }
+
+    /*
+     * Metodo chiamato quando troov il landmark senza alcun blocco a fianco.
+     * Mi sposto verso il buco da riempire. (Per regola, a fianco di un
+     * landmark vi può essere una sola cella di tipo TO_FILL)
+     *
+    private Point goToFirstBlock() {
+        Point destination = (Point)position.clone();
+
+        if(map.getTerrain(position.x+1, position.y) == TerrainType.TO_FILL) {
+            destination.x += 1;
+            lastAction = AgentAction.RIGHT;
+            lastMovement = lastAction;
+            return destination;
+        }
+        if(map.getTerrain(position.x-1, position.y) == TerrainType.TO_FILL) {
+            destination.x -= 1;
+            lastAction = AgentAction.LEFT;
+            lastMovement = lastAction;
+            return destination;
+        }
+        if(map.getTerrain(position.x, position.y+1) == TerrainType.TO_FILL) {
+            destination.y += 1;
+            lastAction = AgentAction.DOWN;
+            lastMovement = lastAction;
+            return destination;
+        }
+
+        destination.y -= 1;
+        lastAction = AgentAction.UP;
+        lastMovement = lastAction;
+        return destination;
+    }
+
+    private boolean approachingPerimeter(){
+        if(position.x+1 < Constants.WIDTH
+                &&    map.getTerrain(position.x+1, position.y) == TerrainType.FILLED) {
+            lastAction = AgentAction.DOWN;
+            lastMovement = lastAction;
+            return true;
+        }
+        if(position.x-1 >= 0
+                &&    map.getTerrain(position.x-1, position.y) == TerrainType.FILLED) {
+            lastAction = AgentAction.UP;
+            lastMovement = lastAction;
+            return true;
+        }
+        if(position.y+1 < Constants.HEIGHT
+                &&    map.getTerrain(position.x, position.y+1) == TerrainType.FILLED) {
+            lastAction = AgentAction.LEFT;
+            lastMovement = lastAction;
+            return true;
+        }
+        if(position.y-1 >= 0
+                &&    map.getTerrain(position.x, position.y-1) == TerrainType.FILLED) {
+            lastAction = AgentAction.RIGHT;
+            lastMovement = lastAction;
+            return true;
+        }
+        return false;
+    }
+
+    /*
+     * This method computes the minimum distance between a cell and the surrounding agents
+     *
+    private int computeDistances(Point destination) {
+        int distance = Integer.MAX_VALUE;
+        if(map.getUnit(destination.x, destination.y) != AgentOrientation.NO_AGENT ){
+            return 0;
+        }
+        for (int i = 0; i < Constants.HEIGHT; i++) {
+            for (int j = 0; j < Constants.WIDTH; j++) {
+                if (map.getUnit(j, i) != AgentOrientation.NO_AGENT && (destination.x != j || destination.y != i) &&
+                        !(i == position.y && j == position.x)) {
+                    if (Math.abs(j - destination.x) + Math.abs(i - destination.y) < distance) {
+                        distance = Math.abs(j - destination.x) + Math.abs(i - destination.y);
+                    }
+                }
+            }
+        }
+        return distance;
+    }
+
+    /*
+     * This method check if a given point is outside the boundaries of the map
+     *
+    private Boolean isOutOfBoundary(Point p) {
+        return p.x >= map.getWidthInTiles() || p.x < 0 || p.y >= map.getHeightInTiles() || p.y < 0;
+    }
+
+    private boolean isOverFilledTerrain() {
+        return map.getTerrain(position.x, position.y) == TerrainType.FILLED;
+    }
+
+
+    private boolean atLandmark(){
+        return map.getTerrain(position.x, position.y) == TerrainType.LANDMARK;
+    }
+
+    private boolean siteShouldHaveABlock(){
+        return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL;
+    }
+
+    /*
+     * An inside corner is defined as an empty site with
+     * blocks at two adjacent sites
+     *
     private boolean atInsideCorner() {
         int count = 0;
 
@@ -354,77 +645,77 @@ public class WorkerAgent extends jade.core.Agent {
         return count >= 2;
     }
 
-    /**
+    /*
      * An end-of-row site is defined as an empty site
      * at which either a robot is about to turn a corner
      * to the left, or the occupancy matrix specifies
      * that the site directly ahead is to be left empty.
-     */
-       private boolean atEndOfRow(){
+     *
+    private boolean atEndOfRow(){
 
-           if(lastAction == AgentAction.UP){
-               // se il blocco "avanti a sinistra" non è
-               // occupato, allora la casella in cui mi trovo
-               // è una end-of-row
-               if (map.getTerrain(position.x - 1, position.y-1) != TerrainType.FILLED)
-                   return true;
-               // se mi trovo in un quadrato di terreno da riempire
-               // e il quadrato antistante va lasciato vuoto, allora
-               // sono ad un' end-of-row
-               return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                       &&
-                       map.getTerrain(position.x, position.y - 1) == TerrainType.EMPTY;
-           }
+        if(lastAction == AgentAction.UP){
+            // se il blocco "avanti a sinistra" non è
+            // occupato, allora la casella in cui mi trovo
+            // è una end-of-row
+            if (map.getTerrain(position.x - 1, position.y-1) != TerrainType.FILLED)
+                return true;
+            // se mi trovo in un quadrato di terreno da riempire
+            // e il quadrato antistante va lasciato vuoto, allora
+            // sono ad un' end-of-row
+            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                    &&
+                    map.getTerrain(position.x, position.y - 1) == TerrainType.EMPTY;
+        }
 
-           if(lastAction == AgentAction.DOWN){
-               // se il blocco "avanti a sinistra" non è
-               // occupato, allora la casella in cui mi trovo
-               // è una end-of-row
-               if (map.getTerrain(position.x + 1, position.y+1) != TerrainType.FILLED)
-                   return true;
-               // se mi trovo in un quadrato di terreno da riempire
-               // e il quadrato antistante va lasciato vuoto, allora
-               // sono ad un' end-of-row
-               return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                       &&
-                       map.getTerrain(position.x, position.y + 1) == TerrainType.EMPTY;
-           }
+        if(lastAction == AgentAction.DOWN){
+            // se il blocco "avanti a sinistra" non è
+            // occupato, allora la casella in cui mi trovo
+            // è una end-of-row
+            if (map.getTerrain(position.x + 1, position.y+1) != TerrainType.FILLED)
+                return true;
+            // se mi trovo in un quadrato di terreno da riempire
+            // e il quadrato antistante va lasciato vuoto, allora
+            // sono ad un' end-of-row
+            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                    &&
+                    map.getTerrain(position.x, position.y + 1) == TerrainType.EMPTY;
+        }
 
-           if(lastAction == AgentAction.RIGHT){
-               // se il blocco "avanti a sinistra" non è
-               // occupato, allora la casella in cui mi trovo
-               // è una end-of-row
-               if (map.getTerrain(position.x + 1, position.y-1) != TerrainType.FILLED)
-                   return true;
-               // se mi trovo in un quadrato di terreno da riempire
-               // e il quadrato antistante va lasciato vuoto, allora
-               // sono ad un' end-of-row
-               return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                       &&
-                       map.getTerrain(position.x + 1, position.y) == TerrainType.EMPTY;
-           }
+        if(lastAction == AgentAction.RIGHT){
+            // se il blocco "avanti a sinistra" non è
+            // occupato, allora la casella in cui mi trovo
+            // è una end-of-row
+            if (map.getTerrain(position.x + 1, position.y-1) != TerrainType.FILLED)
+                return true;
+            // se mi trovo in un quadrato di terreno da riempire
+            // e il quadrato antistante va lasciato vuoto, allora
+            // sono ad un' end-of-row
+            return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                    &&
+                    map.getTerrain(position.x + 1, position.y) == TerrainType.EMPTY;
+        }
 
-           //se arrivo qui, lastAction==LEFT
+        //se arrivo qui, lastAction==LEFT
 
-           // se il blocco "avanti a sinistra" non è
-           // occupato, allora la casella in cui mi trovo
-           // è una end-of-row
-           if (map.getTerrain(position.x - 1, position.y+1) != TerrainType.FILLED)
-               return true;
-           // se mi trovo in un quadrato di terreno da riempire
-           // e il quadrato antistante va lasciato vuoto, allora
-           // sono ad un' end-of-row
-           return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
-                   &&
-                   map.getTerrain(position.x - 1, position.y) == TerrainType.EMPTY;
+        // se il blocco "avanti a sinistra" non è
+        // occupato, allora la casella in cui mi trovo
+        // è una end-of-row
+        if (map.getTerrain(position.x - 1, position.y+1) != TerrainType.FILLED)
+            return true;
+        // se mi trovo in un quadrato di terreno da riempire
+        // e il quadrato antistante va lasciato vuoto, allora
+        // sono ad un' end-of-row
+        return map.getTerrain(position.x, position.y) == TerrainType.TO_FILL
+                &&
+                map.getTerrain(position.x - 1, position.y) == TerrainType.EMPTY;
 
-       }
+    }
 
-    /** Segnala sulla mappa la presenza del blocco,
+    /* Segnala sulla mappa la presenza del blocco,
      *  imposta lo stato dell'agente a WANDERNING e
      *  sposta l'agente a ridosso di uno dei bordi della mappa,
      *  come se  fosse tornato sulla scena con un nuovo blocco
-     */
+     *
     private void attachBlockHere(){
         // riempie la cella con un blocco
         map.fillCell(position.x, position.y);
@@ -447,20 +738,15 @@ public class WorkerAgent extends jade.core.Agent {
     private void followPerimeterCounterclockwise(){
 
         Point destination = (Point) position.clone();
-        AgentAction lastActionCopy = lastAction;
 
-        if(stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING){
-            currentState = AgentFSMState.WANDERING;
-            destination = makeOneStep();
-        }
-
-        else if(lastAction == AgentAction.UP){
+        if(lastMovement == AgentAction.UP){
             if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
                 destination.x -= 1;
                 lastAction = AgentAction.LEFT;
             }else{
                 if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
                     destination.y -= 1;
+                    lastAction = AgentAction.UP;
                 }
                 else{
                     destination.x += 1;
@@ -469,13 +755,14 @@ public class WorkerAgent extends jade.core.Agent {
             }
         }
 
-        else if(lastAction == AgentAction.DOWN){
+        else if(lastMovement == AgentAction.DOWN){
             if(map.getTerrain(position.x+1, position.y) != TerrainType.FILLED){
                 destination.x += 1;
                 lastAction = AgentAction.RIGHT;
             }else{
                 if(map.getTerrain(position.x, position.y+1) != TerrainType.FILLED){
                     destination.y += 1;
+                    lastAction = AgentAction.DOWN;
                 }
                 else{
                     destination.x -= 1;
@@ -484,13 +771,14 @@ public class WorkerAgent extends jade.core.Agent {
             }
         }
 
-        else if(lastAction == AgentAction.RIGHT){
+        else if(lastMovement == AgentAction.RIGHT){
             if(map.getTerrain(position.x, position.y-1) != TerrainType.FILLED){
                 destination.y -= 1;
                 lastAction = AgentAction.UP;
             }else{
                 if(map.getTerrain(position.x+1, position.y) != TerrainType.FILLED){
                     destination.x += 1;
+                    lastAction = AgentAction.RIGHT;
                 }
                 else{
                     destination.y += 1;
@@ -499,13 +787,14 @@ public class WorkerAgent extends jade.core.Agent {
             }
         }
 
-        else if(lastAction == AgentAction.LEFT){
+        else if(lastMovement == AgentAction.LEFT){
             if(map.getTerrain(position.x, position.y+1) != TerrainType.FILLED){
                 destination.y += 1;
                 lastAction = AgentAction.DOWN;
             }else{
                 if(map.getTerrain(position.x-1, position.y) != TerrainType.FILLED){
                     destination.x -= 1;
+                    lastAction = AgentAction.LEFT;
                 }
                 else{
                     destination.y -= 1;
@@ -514,18 +803,17 @@ public class WorkerAgent extends jade.core.Agent {
             }
         }
 
-        if(computeDistances(destination) >= 2 ||
-                (stopCounter > Constants.MAX_ITERATIONS_WITHOUT_MOVING && computeDistances(destination) >= 1)) {
-            move(destination);
+        if(computeDistances(destination) >= 2) {
+            updateModel(destination);
         }
         else {
-            lastAction = lastActionCopy;
+            lastAction = AgentAction.STOP;
         }
     }
 
     /*
      * Assign a random position on the map checking that the chosen position is not already occupied
-     */
+     *
     private Point pickRandomPosition(){
         Random random = new Random();
         Point position = new Point();
@@ -537,4 +825,4 @@ public class WorkerAgent extends jade.core.Agent {
         return position;
     }
 
-}
+ */
