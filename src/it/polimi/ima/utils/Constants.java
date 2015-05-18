@@ -18,6 +18,8 @@ package it.polimi.ima.utils;
  * Constants useful for the whole application
  */
 public interface Constants {
+    /** The number of agents in the game */
+    int NUM_OF_AGENTS = 50;
     /** The map width in tiles */
     int WIDTH = 30;
     /** The map height in tiles */

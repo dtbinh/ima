@@ -16,6 +16,7 @@ package it.polimi.ima.controller;
 
 import it.polimi.ima.utils.*;
 import it.polimi.ima.model.TileBasedMap;
+import it.polimi.ima.view.View;
 import jade.core.behaviours.TickerBehaviour;
 
 import java.awt.*;
@@ -27,8 +28,12 @@ import java.util.Random;
  */
 public class WorkerAgent extends jade.core.Agent {
 
-    // References to the model
+    // ID of the agent
+    private int id;
+    // Reference to the model
     private TileBasedMap map;
+    // Reference to the view
+    private View view;
     // Current state of the agent
     private AgentFSMState currentState;
     // Position of the agent
@@ -39,7 +44,9 @@ public class WorkerAgent extends jade.core.Agent {
     private int stopCounter;
     // Check if the agent has seen a row-start
     private boolean seenRowStart;
-
+    // Current behaviour parameters
+    private AgentBehavior agentBehavior;
+    private int period;
 
     /**
      * Framework method to set up the agent
@@ -47,13 +54,16 @@ public class WorkerAgent extends jade.core.Agent {
     public void setup() {
         // Initializations
         map = (TileBasedMap) getArguments()[0];
+        view = (View) getArguments()[1];
+        id = (int) getArguments()[2];
         currentState = AgentFSMState.WANDERING;
         seenRowStart = false;
         stopCounter = 0;
         position = pickRandomPosition();
-
         // Add the behaviour to the agent
-        addBehaviour(new AgentBehavior(this, 125));
+        period = view.getControls().getValue();
+        agentBehavior = new AgentBehavior(this, period);
+        addBehaviour(agentBehavior);
     }
 
     /**
@@ -65,6 +75,13 @@ public class WorkerAgent extends jade.core.Agent {
         }
         @Override
         protected void onTick() {
+            int newPeriod = view.getControls().getValue() + 1;
+            if(newPeriod != period){
+                period = newPeriod;
+                removeBehaviour(agentBehavior);
+                agentBehavior = new AgentBehavior(WorkerAgent.this, period);
+                WorkerAgent.this.addBehaviour(agentBehavior);
+            }
             agentFSM();
         }
     }
@@ -256,7 +273,7 @@ public class WorkerAgent extends jade.core.Agent {
     private void constructionAlgorithm(){
         // In case of emergency
         if(isOverFilledTerrain()){
-            System.out.println("Fuck, I was buried alive! Activate teleportation! =)");
+            System.out.println("WorkerAgent" + id + ": Fuck, I was buried alive! Activate teleportation! =)");
             // Set internal state back to WANDERING
             currentState = AgentFSMState.WANDERING;
             seenRowStart = false;
@@ -439,7 +456,7 @@ public class WorkerAgent extends jade.core.Agent {
     @Override
     public void doDelete() {
         map.setUnit(position.x, position.y, AgentOrientation.NO_AGENT);
-        System.out.println("Agent " + getAID().getLocalName() + ": Goodbye, cruel world. =(");
+        System.out.println("WorkerAgent" + id + ": Goodbye, cruel world. =(");
         super.doDelete();
     }
 }

@@ -15,6 +15,7 @@
 package it.polimi.ima;
 
 import it.polimi.ima.model.TileBasedMap;
+import it.polimi.ima.utils.Constants;
 import it.polimi.ima.view.View;
 import jade.core.*;
 import jade.core.Runtime;
@@ -39,19 +40,15 @@ public class IMAMain {
         ContainerController cc =  runtime.createMainContainer(new ProfileImpl(false));
 
         try {
-            int id = 0;
-            // create enemy tank agent and start it
-            for(int i=0; i<150; i++) {
-                id = i+1;
-                System.out.println("WorkerAgent: " + id);
-                Object[] args = {map};
-                (cc.createNewAgent("agent" + id, "it.polimi.ima.controller.WorkerAgent", args)).start();
+            // Create agents
+            for(int i=0; i< Constants.NUM_OF_AGENTS; i++) {
+                System.out.println("WorkerAgent" + (i+1) + ": Hello!");
+                Object[] args = {map, view, i};
+                (cc.createNewAgent("agent" + (i+1), "it.polimi.ima.controller.WorkerAgent", args)).start();
             }
-            id++;
-            System.out.println("GUI WorkerAgent: " + id);
+            System.out.println("MapUpdaterAgent: Hello!");
             Object[] args = {map, view};
-            (cc.createNewAgent("GUIAgent" + id, "it.polimi.ima.controller.GUIUpdaterAgent", args)).start();
-
+            (cc.createNewAgent("MapUpdaterAgent", "it.polimi.ima.controller.MapUpdaterAgent", args)).start();
         } catch (StaleProxyException e) {
             e.printStackTrace();
         }
